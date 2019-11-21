@@ -140,11 +140,12 @@ def get_detail_command():
         
     sqlexec2="CREATE TABLE #DPath(Type nvarchar(50),Location nvarchar(250),\
     Restart integer);INSERT INTO #DPath(Type,Location,Restart) SELECT Type,\
-        CONVERT(NVARCHAR(250),Location),Restart FROM #DPaths;INSERT INTO \
-        #DPath(Type,Location) SELECT Type,CONVERT(NVARCHAR(250),Location) \
+        CONVERT(NVARCHAR,Location),Restart FROM #DPaths;INSERT INTO \
+        #DPath(Type,Location) SELECT Type,CONVERT(NVARCHAR,Location) \
         FROM #RDPaths WHERE Type='BackupDirectory';"
         
-    sqlexec3="SELECT Type,Location,Restart FROM #DPath;"
+    sqlexec3="SELECT Type, Location, Restart, CASE WHEN (ISNULL(Restart,0)=1)\
+    THEN 'Required' ELSE 'No' END AS Restart FROM #DPath;"
 
     for i in serverNbTab4Tree1.get_children():
         serverNbTab4Tree1.delete(i)
@@ -152,8 +153,14 @@ def get_detail_command():
     for row in mssqldetailsp(selected_row['Server'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2,sqlexec3):
-        serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[2]))
-
+        if (row[2]==1):
+            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
+                                     tags = ('need',))
+        else:
+            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
+                                     tags = ('good',))
+    serverNbTab4Tree1.tag_configure('need', background='red')
+    
 ####### main------------------------------------------------------------------
     
 menubar = Menu(window)

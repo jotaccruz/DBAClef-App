@@ -39,7 +39,7 @@ def mysqlconnect():
         
 def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
-    mssqlserver = 'tcp:34.83.59.76,1433'
+    mssqlserver = 'tcp:35.247.3.208,1433'
     mssqldatabase = 'DBAdmin'
     mssqlusername = 'test'
     mssqlpsw = ''
