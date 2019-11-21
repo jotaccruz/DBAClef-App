@@ -39,10 +39,10 @@ def mysqlconnect():
         
 def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
-    mssqlserver = 'tcp:35.224.23.215,1433'
-    mssqldatabase = 'master'
-    mssqlusername = 'books'
-    mssqlpsw = 'Book2019'
+    mssqlserver = 'tcp:34.83.59.76,1433'
+    mssqldatabase = 'DBAdmin'
+    mssqlusername = 'test'
+    mssqlpsw = ''
     #mssqlinstancename = 'localhost'
     mssqlconnection_string = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
                               +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
@@ -59,6 +59,17 @@ def mssqldetail(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
     conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec)
+    rows=cur.fetchall()
+    conn.close()
+    return rows
+
+def mssqldetailsp(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
+                  sqlexec2,sqlexec3):
+    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+    cur=conn.cursor()
+    cur.execute(sqlexec1)
+    cur.execute(sqlexec2)
+    cur.execute(sqlexec3)
     rows=cur.fetchall()
     conn.close()
     return rows

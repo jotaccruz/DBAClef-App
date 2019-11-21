@@ -115,6 +115,45 @@ def get_detail_command():
             tags = ('good',))
 
     serverNbTab2Tree1.tag_configure('need', background='red')
+
+#### Tab Page File
+    for i in serverNbTab3Tree1.get_children():
+        serverNbTab3Tree1.delete(i)
+        
+    for row in pageinfo(selected_row['Server']):
+        serverNbTab3Tree1.insert("", END, values=(row['SystemName'],\
+                                                      row['Automatic'],\
+                                                      row['Caption'],\
+                                                      row['Status'],\
+                                                      row['CurrentUsage'],\
+                                                      row['PeakUsage'],\
+                                                      row['InitialSize'],\
+                                                      row['MaximunSize']),\
+        tags = ('good',))
+
+    serverNbTab3Tree1.tag_configure('need', background='red')
+
+#### Tab Default Paths
+    sqlexec1="CREATE TABLE #DPaths(Type nvarchar(50),Location sql_variant, \
+    Restart integer);CREATE TABLE #RDPaths(Type nvarchar(50),\
+        Location sql_variant);EXECUTE dbo.get_defaultpathdb;"
+        
+    sqlexec2="CREATE TABLE #DPath(Type nvarchar(50),Location nvarchar(250),\
+    Restart integer);INSERT INTO #DPath(Type,Location,Restart) SELECT Type,\
+        CONVERT(NVARCHAR(250),Location),Restart FROM #DPaths;INSERT INTO \
+        #DPath(Type,Location) SELECT Type,CONVERT(NVARCHAR(250),Location) \
+        FROM #RDPaths WHERE Type='BackupDirectory';"
+        
+    sqlexec3="SELECT Type,Location,Restart FROM #DPath;"
+
+    for i in serverNbTab4Tree1.get_children():
+        serverNbTab4Tree1.delete(i)
+        
+    for row in mssqldetailsp(selected_row['Server'],"DBAdmin",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
+                           sqlexec2,sqlexec3):
+        serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[2]))
+
 ####### main------------------------------------------------------------------
     
 menubar = Menu(window)
@@ -193,7 +232,12 @@ serverNb.grid(row=0,column=0, sticky="e")
 
 serverNbTab1=Frame(serverNb)
 serverNbTab2=Frame(serverNb)
+serverNbTab3=Frame(serverNb)
+serverNbTab4=Frame(serverNb)
+serverNbTab5=Frame(serverNb)
+serverNbTab6=Frame(serverNb)
 
+#General Status Tab
 serverNbTab1Tree1=ttk.Treeview(serverNbTab1,show='headings')
 serverNbTab1Tree1.grid(row=0,column=0,padx=5, pady=5)
 serverNbTab1Tree1['columns'] = ('Server', 'Ip', 'Os')
@@ -204,6 +248,7 @@ serverNbTab1Tree1.column("Ip", minwidth=0,width=100)
 serverNbTab1Tree1.heading("Os", text="OS")
 serverNbTab1Tree1.column("Os", minwidth=0,width=100)
 
+#Disks Tab
 serverNbTab2Tree1=ttk.Treeview(serverNbTab2,show='headings')
 serverNbTab2Tree1.grid(row=0,column=0,padx=5, pady=5)
 serverNbTab2Tree1['columns'] = ('SName', 'Name', 'DLetter','FSystem',
@@ -229,9 +274,49 @@ serverNbTab2Tree1.column("BSize", minwidth=0,width=75)
 serverNbTab2Tree1.heading("SUBSize", text="SUBSIZE KB")
 serverNbTab2Tree1.column("SUBSize", minwidth=0,width=75)
 
+#Page File Tab
+serverNbTab3Tree1=ttk.Treeview(serverNbTab3,show='headings')
+serverNbTab3Tree1.grid(row=0,column=0,padx=5, pady=5)
+serverNbTab3Tree1['columns'] = ('SName', 'Automatic', 'Caption','Status',
+                 'CurrentUsage', 'PeakUsage', 'InitialSize', 'MaximunSize')
+serverNbTab3Tree1['displaycolumns'] = ('SName', 'Automatic', 'Caption','Status'
+                 ,'CurrentUsage', 'PeakUsage', 'InitialSize', 'MaximunSize')
+serverNbTab3Tree1.heading("SName", text="SERVER")
+serverNbTab3Tree1.column("SName", minwidth=0,width=150)
+serverNbTab3Tree1.heading("Automatic", text="AUTO")
+serverNbTab3Tree1.column("Automatic", minwidth=0,width=50)
+serverNbTab3Tree1.heading("Caption", text="FNAME")
+serverNbTab3Tree1.column("Caption", minwidth=0,width=75)
+serverNbTab3Tree1.heading("Status", text="STATUS")
+serverNbTab3Tree1.column("Status", minwidth=0,width=75)
+serverNbTab3Tree1.heading("CurrentUsage", text="CUSAGE GB")
+serverNbTab3Tree1.column("CurrentUsage", minwidth=0,width=150)
+serverNbTab3Tree1.heading("PeakUsage", text="PUSAGE GB")
+serverNbTab3Tree1.column("PeakUsage", minwidth=0,width=100)
+serverNbTab3Tree1.heading("InitialSize", text="ISIZE GB")
+serverNbTab3Tree1.column("InitialSize", minwidth=0,width=75)
+serverNbTab3Tree1.heading("MaximunSize", text="MSIZE GB")
+serverNbTab3Tree1.column("MaximunSize", minwidth=0,width=75)
 
-serverNb.add(serverNbTab1, text='Detail',)
+#Defaulth Paths Tab
+serverNbTab4Tree1=ttk.Treeview(serverNbTab4,show='headings')
+serverNbTab4Tree1.grid(row=0,column=0,padx=5, pady=5)
+serverNbTab4Tree1['columns'] = ('Type', 'Location','Restart')
+serverNbTab4Tree1['displaycolumns'] = ('Type', 'Location','Restart')
+serverNbTab4Tree1.heading("Type", text="TYPE")
+serverNbTab4Tree1.column("Type", minwidth=0,width=100)
+serverNbTab4Tree1.heading("Location", text="LOCATION")
+serverNbTab4Tree1.column("Location", minwidth=0,width=500)
+serverNbTab4Tree1.heading("Restart", text="RESTART")
+serverNbTab4Tree1.column("Restart", minwidth=0,width=75)
+
+serverNb.add(serverNbTab1, text='Status',)
 serverNb.add(serverNbTab2, text='Disks',)
+serverNb.add(serverNbTab3, text='Page File',)
+serverNb.add(serverNbTab4, text='Default Paths',)
+serverNb.add(serverNbTab5, text='Alerts',)
+serverNb.add(serverNbTab6, text='DBMail',)
+
 
 inventoryframe['borderwidth'] = 2
 inventoryframe['relief'] = 'groove'
