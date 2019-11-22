@@ -114,7 +114,7 @@ def get_detail_command():
                                                           ""),\
             tags = ('good',))
 
-    serverNbTab2Tree1.tag_configure('need', background='red')
+    #serverNbTab2Tree1.tag_configure('need', background='red')
 
 #### Tab Page File
     for i in serverNbTab3Tree1.get_children():
@@ -131,7 +131,7 @@ def get_detail_command():
                                                       row['MaximunSize']),\
         tags = ('good',))
 
-    serverNbTab3Tree1.tag_configure('need', background='red')
+    #serverNbTab3Tree1.tag_configure('need', background='red')
 
 #### Tab Default Paths
     sqlexec1="CREATE TABLE #DPaths(Type nvarchar(50),Location sql_variant, \
@@ -140,8 +140,8 @@ def get_detail_command():
         
     sqlexec2="CREATE TABLE #DPath(Type nvarchar(50),Location nvarchar(250),\
     Restart integer);INSERT INTO #DPath(Type,Location,Restart) SELECT Type,\
-        CONVERT(NVARCHAR,Location),Restart FROM #DPaths;INSERT INTO \
-        #DPath(Type,Location) SELECT Type,CONVERT(NVARCHAR,Location) \
+        CONVERT(NVARCHAR(250),Location),Restart FROM #DPaths;INSERT INTO \
+        #DPath(Type,Location) SELECT Type,CONVERT(NVARCHAR(250),Location) \
         FROM #RDPaths WHERE Type='BackupDirectory';"
         
     sqlexec3="SELECT Type, Location, Restart, CASE WHEN (ISNULL(Restart,0)=1)\
@@ -159,7 +159,144 @@ def get_detail_command():
         else:
             serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
                                      tags = ('good',))
-    serverNbTab4Tree1.tag_configure('need', background='red')
+    #serverNbTab4Tree1.tag_configure('need', background='red')
+
+#### Tab Alerts
+#Operator
+    sqlexec="SELECT name,email_address,CASE WHEN enabled=0 THEN 'No' ELSE \
+    'Yes' END AS Enabled,CASE WHEN pager_days=0 THEN 'All' ELSE 'Some days' \
+    END AS Notifications FROM msdb.dbo.sysoperators WHERE enabled = 1"
+
+    for i in serverNbTab5Tree1.get_children():
+        serverNbTab5Tree1.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab5Tree1.insert("", END, values=(row[0],row[1],row[2],row[3]))
+    
+#Alerts
+    sqlexec="SELECT id,name,severity,CASE WHEN enabled=0 THEN 'No' ELSE 'Yes'\
+    END AS Enabled FROM msdb.dbo.sysalerts"
+    
+    for i in serverNbTab5Tree3.get_children():
+        serverNbTab5Tree3.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]))
+    
+#Failsafe Operator
+    sqlexec1="CREATE TABLE #AlertInfo (FailSafeOperator NVARCHAR(255),\
+    NotificationMethod INT,ForwardingServer NVARCHAR(255),ForwardingSeverity \
+    INT,PagerToTemplate NVARCHAR(255),PagerCCTemplate NVARCHAR(255),\
+    PagerSubjectTemplate NVARCHAR(255),PagerSendSubjectOnly NVARCHAR(255),\
+    ForwardAlways INT);"
+        
+    sqlexec2="INSERT  INTO #AlertInfo EXEC [master].[dbo].[sp_MSgetalertinfo] \
+    @includeaddresses = 0;"
+        
+    sqlexec3="SELECT ISNULL(FailSafeOperator,CONVERT(NVARCHAR(250),\
+    'No Fail safe Operator.')) AS \
+    FailSafeOperator, CASE WHEN(ISNULL(FailSafeOperator,1)<>1) \
+    THEN '0' ELSE '1' END as Semaphore FROM #AlertInfo;"
+
+    for rows in serverNbTab5Tree2.get_children():
+        serverNbTab5Tree2.delete(rows)
+        
+    for rows in mssqldetailsp(selected_row['Server'],"DBAdmin",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
+                           sqlexec2,sqlexec3):
+        if (rows[1]=='1'):
+            serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('need'))
+            print(rows[0])
+        else:
+            serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('good'))
+            print(rows[0])
+    
+#### Tab DBMail
+#Flies
+##SQL Server Agent enabled  
+    sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled;' ELSE 'Enabled' END AS SQLAgentEnabled FROM sys.configurations WHERE [name] ='Agent XPs';"
+
+    for i in serverNbTab6Tree1.get_children():
+        serverNbTab6Tree1.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree1.insert("", END, values=(row[0]))
+
+##SQL Server Agent status
+    sqlexec="IF (SELECT CAST(SERVERPROPERTY('Edition') AS VARCHAR(30))) NOT LIKE 'Express Edition%' BEGIN SELECT CASE WHEN status_desc = 'Running' THEN 'Running' ELSE 'Stopped' END AS SQLAgentStarted FROM sys.dm_server_services WHERE servicename LIKE 'SQL Server Agent%' END;"
+
+    for i in serverNbTab6Tree2.get_children():
+        serverNbTab6Tree2.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree2.insert("", END, values=(row[0]))
+    
+##SQL Database Mail is enabled
+    sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled;' ELSE 'Enabled' END AS DBMailEnabled  FROM sys.configurations WHERE [name] ='Database Mail XPs';"
+
+    for i in serverNbTab6Tree3.get_children():
+        serverNbTab6Tree3.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree3.insert("", END, values=(row[0]))
+
+##@SQL Agent Mail Enabled     
+    sqlexec="SELECT CASE WHEN COUNT(*) > 0 THEN 'Enabled' ELSE 'Disabled' END AS SQLAgentMailEnabled FROM msdb.dbo.sysmail_profile;"
+
+    for i in serverNbTab6Tree4.get_children():
+        serverNbTab6Tree4.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree4.insert("", END, values=(row[0]))
+
+##Mail Account Enabled
+    sqlexec="SELECT CASE WHEN COUNT(*) > 0 THEN 'Enabled' ELSE 'Disabled' END AS MailAccountEnabled FROM msdb.dbo.sysmail_account;"
+
+    for i in serverNbTab6Tree5.get_children():
+        serverNbTab6Tree5.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree5.insert("", END, values=(row[0]))
+
+##SQL Server Agent is enabled to use Database Mail
+    sqlexec="DECLARE @SQLAgentMailEnabled INT = 0; EXECUTE master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'SOFTWARE\Microsoft\MSSQLServer\SQLServerAgent', N'UseDatabaseMail', @SQLAgentMailEnabled OUTPUT; SELECT CASE WHEN @SQLAgentMailEnabled=1 THEN 'Enabled' ELSE 'Disabled' END AS SQLAgentMailEnabled"
+
+    for i in serverNbTab6Tree6.get_children():
+        serverNbTab6Tree6.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree6.insert("", END, values=(row[0]))
+
+##SQL Server Agent is enabled to use Database Mail and Mail Profile is assigned
+    sqlexec="DECLARE @SQLAgentMailProfileEnabled SYSNAME; EXECUTE master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',N'SOFTWARE\Microsoft\MSSQLServer\SQLServerAgent',N'DatabaseMailProfile', @SQLAgentMailProfileEnabled OUTPUT; SELECT CASE WHEN @SQLAgentMailProfileEnabled=1 THEN 'Enabled' ELSE 'Disabled' END AS SQLAgentMailProfileEnabled"
+
+    for i in serverNbTab6Tree7.get_children():
+        serverNbTab6Tree7.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree7.insert("", END, values=(row[0]))
+
+##get email retry interval configuration value
+    sqlexec="SELECT paramvalue as retry_sec FROM msdb.dbo.sysmail_configuration WHERE paramname = 'AccountRetryDelay';"
+
+    for i in serverNbTab6Tree8.get_children():
+        serverNbTab6Tree8.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec):
+        serverNbTab6Tree8.insert("", END, values=(row[0]))
+
+
+    #serverNbTab5Tree2.tag_configure('need', background='red')
     
 ####### main------------------------------------------------------------------
     
@@ -167,14 +304,14 @@ menubar = Menu(window)
 
 # create a pulldown menu, and add it to the menu bar
 filemenu = Menu(menubar, tearoff=0)
-filemenu.add_command(label="0 Server List", command=view_command)
-filemenu.add_command(label="1 Default path", command=hello)
-filemenu.add_command(label="2 DBAdmin", command=hello)
-filemenu.add_command(label="3 DBMail", command=hello)
-filemenu.add_command(label="4 Alerts", command=hello)
-filemenu.add_command(label="5 sp_whoisactive", command=hello)
-filemenu.add_command(label="6 ServerName", command=hello)
-filemenu.add_command(label="7 DatabaseOwner", command=hello)
+filemenu.add_command(label="1 Server List", command=view_command)
+filemenu.add_command(label="2 Default path", command=hello)
+filemenu.add_command(label="3 DBAdmin", command=hello)
+filemenu.add_command(label="4 DBMail", command=hello)
+filemenu.add_command(label="5 Alerts", command=hello)
+filemenu.add_command(label="6 sp_whoisactive", command=hello)
+filemenu.add_command(label="7 ServerName", command=hello)
+filemenu.add_command(label="8 DatabaseOwner", command=hello)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=window.destroy)
 menubar.add_cascade(label="Setup", menu=filemenu)
@@ -195,47 +332,48 @@ window.config(menu=menubar)
 window.wm_title("DBAJam")
 
 #Frame Controls
-inventoryframe = ttk.Frame(window, width=600, height=512)
+inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
 inventoryframe.grid(row=0,column=0,padx=5, pady=5)
 
-#Labels controls
-l1=ttk.Label(inventoryframe,text="Server",width=35)
-l1.grid(row=0,column=0)
+inventoryframe2 = ttk.LabelFrame(window, width=650, height=192,text="Status")
+inventoryframe2.grid(row=0,column=1,padx=5, pady=5)
 
-#Text Controls
+#Texts
 server_text=StringVar()
-e1=ttk.Entry(inventoryframe,textvariable=server_text,width=39)
-e1.grid(row=0,column=1)
+e1=ttk.Entry(inventoryframe,textvariable=server_text,width=20)
+e1.grid(row=0,column=0,padx=5, pady=5)
 
-#Bottom Controls
+#Bottoms
 DetailButton = Button(inventoryframe, text='Details', underline = 0, \
                       command=get_detail_command)
-DetailButton.grid(column=2, row=0, sticky="e", padx=5, pady=5)
+DetailButton.grid(row=0, column=1, sticky="e", padx=5, pady=5)
 
-ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
-                      command=get_detail_command)
-ScanButton.grid(column=2, row=2, sticky="s", padx=5, pady=5)
+#ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
+#                      command=get_detail_command)
+#ScanButton.grid(row=2, column=2, sticky="s", padx=5, pady=5)
 
-ExitButton = Button(inventoryframe, text='Exit', underline = 0, \
-                      command=window.destroy)
-ExitButton.grid(column=2, row=3, sticky="s", padx=5, pady=5)
+#ExitButton = Button(inventoryframe, text='Exit', underline = 0, \
+#                      command=window.destroy)
+#ExitButton.grid(row=3, column=2, sticky="s", padx=5, pady=5)
 
-#TreeView Controls
-InventoryTree=ttk.Treeview(inventoryframe,show='headings')
+#TreeViews
+InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
 InventoryTree.grid(row=2,column=0,padx=5, pady=5,rowspan=6,columnspan=2)
-InventoryTree['columns'] = ('Server', 'User', 'Pwd')
-InventoryTree['displaycolumns'] = ('Server')
-InventoryTree.heading("Server", text="SERVER")
+InventoryTree['columns'] = ('Server', 'User', 'Pwd',)
+InventoryTree['displaycolumns'] = ('Server',)
+InventoryTree.column("Server", minwidth=0,width=175)
+InventoryTree.heading("Server", text="SERVER",)
 InventoryTree.heading("User", text="USER")
 InventoryTree.heading("Pwd", text="PWD")
 
+
 InventoryTree.bind('<Double-Button-1>',lambda x: DetailButton.invoke())
 
-detailframe = Frame(window, width=600, height=600)
-detailframe.grid(row=2,column=0,padx=5, pady=5)
+detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
+detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2)
 
 serverNb=ttk.Notebook(detailframe)
-serverNb.grid(row=0,column=0, sticky="e")
+serverNb.grid(row=0,column=0, sticky="e",padx=5, pady=5)
 
 serverNbTab1=Frame(serverNb)
 serverNbTab2=Frame(serverNb)
@@ -245,7 +383,7 @@ serverNbTab5=Frame(serverNb)
 serverNbTab6=Frame(serverNb)
 
 #General Status Tab
-serverNbTab1Tree1=ttk.Treeview(serverNbTab1,show='headings')
+serverNbTab1Tree1=ttk.Treeview(serverNbTab1,show='headings',height=7,)
 serverNbTab1Tree1.grid(row=0,column=0,padx=5, pady=5)
 serverNbTab1Tree1['columns'] = ('Server', 'Ip', 'Os')
 serverNbTab1Tree1.heading("Server", text="SERVER")
@@ -317,12 +455,117 @@ serverNbTab4Tree1.column("Location", minwidth=0,width=500)
 serverNbTab4Tree1.heading("Restart", text="RESTART")
 serverNbTab4Tree1.column("Restart", minwidth=0,width=75)
 
+#Alerts Tab
+#Operator
+serverNbTab5Tree1=ttk.Treeview(serverNbTab5,show='headings',height=1, )
+serverNbTab5Tree1.grid(row=0,column=0,padx=5, pady=5, )
+serverNbTab5Tree1['columns'] = ('Name', 'Email','Enabled','Notification')
+serverNbTab5Tree1['displaycolumns'] = ('Name', 'Email','Enabled',\
+                 'Notification')
+serverNbTab5Tree1.heading("Name", text="OPERATOR")
+serverNbTab5Tree1.column("Name", minwidth=0,width=85)
+serverNbTab5Tree1.heading("Email", text="EMAIL")
+serverNbTab5Tree1.column("Email", minwidth=0,width=200)
+serverNbTab5Tree1.heading("Enabled", text="ENABLED")
+serverNbTab5Tree1.column("Enabled", minwidth=0,width=75)
+serverNbTab5Tree1.heading("Notification", text="NOTIFICATION")
+serverNbTab5Tree1.column("Notification", minwidth=0,width=100)
+
+#Failsafe Operator
+serverNbTab5Tree2=ttk.Treeview(serverNbTab5,show='headings',height=1,)
+serverNbTab5Tree2.grid(row=0,column=1,padx=5, pady=5)
+serverNbTab5Tree2['columns'] = ('FailSafeOperator')
+serverNbTab5Tree2['displaycolumns'] = ('FailSafeOperator')
+serverNbTab5Tree2.heading("FailSafeOperator", text="FAIL SAFE OPERATOR")
+serverNbTab5Tree2.column("FailSafeOperator", minwidth=0,width=175)
+
+#Alerts
+serverNbTab5Tree3=ttk.Treeview(serverNbTab5,show='headings',height=7, )
+serverNbTab5Tree3.grid(row=1,column=0,padx=5, pady=5,columnspan=2)
+serverNbTab5Tree3['columns'] = ('Name', 'Severity','Enabled','')
+serverNbTab5Tree3['displaycolumns'] = ('Name', 'Severity','Enabled','')
+serverNbTab5Tree3.heading("Name", text="ALERT")
+serverNbTab5Tree3.column("Name", minwidth=0,width=250)
+serverNbTab5Tree3.heading("Severity", text="SEVERITY")
+serverNbTab5Tree3.column("Severity", minwidth=0,width=100)
+serverNbTab5Tree3.heading("Enabled", text="ENABLED")
+serverNbTab5Tree3.column("Enabled", minwidth=0,width=100)
+
+scrollbar_vertical = ttk.Scrollbar(serverNbTab5, orient="vertical", \
+                                   command=serverNbTab5Tree3.yview)
+scrollbar_vertical.grid(row=1, column=2, sticky="ns")
+serverNbTab5Tree3.configure(yscrollcommand=scrollbar_vertical.set)
+
+
+
+#DBEmail Tab
+#Dashboard
+serverNbTab6Tree1=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree1.grid(row=0,column=0,padx=5, pady=5, )
+serverNbTab6Tree1['columns'] = ('SQLAgentEnabled')
+serverNbTab6Tree1['displaycolumns'] = ('SQLAgentEnabled')
+serverNbTab6Tree1.heading("SQLAgentEnabled", text="SQL Agent Enabled")
+serverNbTab6Tree1.column("SQLAgentEnabled", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree2=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree2.grid(row=0,column=1,padx=5, pady=5, )
+serverNbTab6Tree2['columns'] = ('SQLAgentStarted')
+serverNbTab6Tree2['displaycolumns'] = ('SQLAgentStarted')
+serverNbTab6Tree2.heading("SQLAgentStarted", text="SQL Agent Started")
+serverNbTab6Tree2.column("SQLAgentStarted", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree3=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree3.grid(row=0,column=2,padx=5, pady=5, )
+serverNbTab6Tree3['columns'] = ('DBMailEnabled')
+serverNbTab6Tree3['displaycolumns'] = ('DBMailEnabled')
+serverNbTab6Tree3.heading("DBMailEnabled", text="DBMail Enabled")
+serverNbTab6Tree3.column("DBMailEnabled", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree4=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree4.grid(row=0,column=3,padx=5, pady=5, )
+serverNbTab6Tree4['columns'] = ('MailProfileEnabled')
+serverNbTab6Tree4['displaycolumns'] = ('MailProfileEnabled')
+serverNbTab6Tree4.heading("MailProfileEnabled", text="Mail Profile Enabled")
+serverNbTab6Tree4.column("MailProfileEnabled", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree5=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree5.grid(row=1,column=0,padx=5, pady=5, )
+serverNbTab6Tree5['columns'] = ('MailAccountEnabled')
+serverNbTab6Tree5['displaycolumns'] = ('MailAccountEnabled')
+serverNbTab6Tree5.heading("MailAccountEnabled", text="Mail Account Enabled")
+serverNbTab6Tree5.column("MailAccountEnabled", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree6=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree6.grid(row=1,column=1,padx=5, pady=5, )
+serverNbTab6Tree6['columns'] = ('SQLAgentMailEnabled')
+serverNbTab6Tree6['displaycolumns'] = ('SQLAgentMailEnabled')
+serverNbTab6Tree6.heading("SQLAgentMailEnabled", text="SQL Agent Mail Enabled")
+serverNbTab6Tree6.column("SQLAgentMailEnabled", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree7=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree7.grid(row=1,column=2,padx=5, pady=5, )
+serverNbTab6Tree7['columns'] = ('SQLAgentMailProfileEnabled')
+serverNbTab6Tree7['displaycolumns'] = ('SQLAgentMailProfileEnabled')
+serverNbTab6Tree7.heading("SQLAgentMailProfileEnabled", \
+                          text="SQLAgent Mail Profile Enabled")
+serverNbTab6Tree7.column("SQLAgentMailProfileEnabled", minwidth=0,width=145,anchor="center")
+
+serverNbTab6Tree8=ttk.Treeview(serverNbTab6,show='headings',height=1, )
+serverNbTab6Tree8.grid(row=1,column=3,padx=5, pady=5, )
+serverNbTab6Tree8['columns'] = ('retry_sec')
+serverNbTab6Tree8['displaycolumns'] = ('retry_sec')
+serverNbTab6Tree8.heading("retry_sec", text="Retry Sec")
+serverNbTab6Tree8.column("retry_sec", minwidth=0,width=145,anchor="center")
+
+
+#Adding all Tabs to the Notebook
 serverNb.add(serverNbTab1, text='Status',)
 serverNb.add(serverNbTab2, text='Disks',)
 serverNb.add(serverNbTab3, text='Page File',)
 serverNb.add(serverNbTab4, text='Default Paths',)
-serverNb.add(serverNbTab5, text='Alerts',)
 serverNb.add(serverNbTab6, text='DBMail',)
+serverNb.add(serverNbTab5, text='Alerts',)
+
 
 
 inventoryframe['borderwidth'] = 2
