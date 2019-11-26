@@ -10,6 +10,8 @@ Code behind the App that helps DBA to apply best practice to SQL Server:
 
 import pyodbc
 import mysql.connector
+import tkinter
+from tkinter import messagebox
 #from mysql.connector.constants import ClientFlag
 #from mysql.connector import errorcode
 
@@ -35,7 +37,7 @@ def mysqlconnect():
         mysqlconn = mysql.connector.connect(**config)
         return mysqlconn
     except mysql.connector.Error as err:
-        print (err)
+        messagebox.showinfo ("Connection Error", err)
         
 def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
@@ -53,7 +55,7 @@ def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
         return mssqlconn
     except pyodbc.Error as ex:
         sqlstate = ex.args[1]
-        print(sqlstate)
+        messagebox.showinfo ("Connection Error", sqlstate)
         
 def mssqldetail(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
     conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)

@@ -1,3 +1,5 @@
+#pyinstaller DBAJam.py --windowed --onefile
+
 # -*- coding: utf-8 -*-
 """
 Python 3.7.4
@@ -12,7 +14,6 @@ User can:
     Set an specific configuration
     Some utilities
     Close
- 
 """
 
 #import backend
@@ -25,6 +26,10 @@ import DBAJamOS
 from DBAJamOS import *
 
 window=Tk()
+
+
+def getRbselected(widget):
+    print (widget["text"])
 
 def hello():
     # create a canvas
@@ -52,8 +57,8 @@ def view_command():
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
     
-    query="SELECT srv_name as SERVER, srv_user as USER, SRV_PWD as PWD"\
-            " FROM lgm_servers WHERE"+ \
+    query="SELECT srv_name as SERVER, srv_user as USER, SRV_PWD as PWD,"\
+            " srv_ip as IP, srv_os as OS FROM lgm_servers WHERE"+ \
             " srv_name in"+\
             " ('SCAEDYAK02','SUSWEYAK05');"
     #query="SELECT srv_name as SERVER, srv_ip as IP, srv_os as OS,"\
@@ -62,7 +67,7 @@ def view_command():
     #        " srv_location = 'GCP' and srv_active=1 and srv_name in"+\
     #        " ('SUSWEYAK03','SUSWEYAK05');"
     for row in dbservers(query):
-        InventoryTree.insert("", END, values=(row[0],row[1],row[2]))
+        InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],row[4]))
 
 def get_selected_command(event):
     return
@@ -74,16 +79,15 @@ def get_detail_command():
     except IndexError:
         pass
 
-#### Tab Detail
-    sqlexec="SELECT @@SERVERNAME as SERVER,'192.168.0.1' as IP,'Windows'"+\
-    " as OS FROM sys.dm_exec_requests"
+#### Tab Special Settings
+    sqlexec="SELECT CONVERT(nvarchar(250),@@servername) AS 'ServerName\InstanceName',CONVERT(nvarchar(250),SERVERPROPERTY('servername')) AS 'ServerName',CONVERT(nvarchar(250),SERVERPROPERTY('machinename')) AS 'Windows_Name',CONVERT(nvarchar(250),SERVERPROPERTY('ComputerNamePhysicalNetBIOS')) AS 'NetBIOS_Name',CONVERT(nvarchar(250),ISNULL(SERVERPROPERTY('instanceName'),'DEFAULT')) AS 'InstanceName',CONVERT(nvarchar(250),SERVERPROPERTY('IsClustered')) AS 'IsClustered'"
 
     for i in serverNbTab1Tree1.get_children():
         serverNbTab1Tree1.delete(i)
         
     for row in mssqldetail(selected_row['Server'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2]))
+        serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
     
 #### Tab Disks
     for i in serverNbTab2Tree1.get_children():
@@ -208,11 +212,9 @@ def get_detail_command():
                            sqlexec2,sqlexec3):
         if (rows[1]=='1'):
             serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('need'))
-            print(rows[0])
         else:
             serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('good'))
-            print(rows[0])
-    
+
 #### Tab DBMail
 #Flies
 ##SQL Server Agent enabled  
@@ -335,8 +337,13 @@ window.wm_title("DBAJam")
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
 inventoryframe.grid(row=0,column=0,padx=5, pady=5)
 
-inventoryframe2 = ttk.LabelFrame(window, width=650, height=192,text="Status")
-inventoryframe2.grid(row=0,column=1,padx=5, pady=5)
+Statusframe1 = ttk.LabelFrame(window, width=525, height=192,text="Status")
+Statusframe1.grid(row=0,column=1,padx=5, pady=5)
+
+Rb1 = Radiobutton(Statusframe1, text="Local",value=0, command= lambda : getRbselected(Rb1))
+Rb1.grid(row=0,column=0,padx=5, pady=5, sticky="W")
+Rb2 = Radiobutton(Statusframe1, text="Remoto", value=1, command= lambda : getRbselected(Rb2))
+Rb2.grid(row=1,column=0,padx=5, pady=5, sticky="W")
 
 #Texts
 server_text=StringVar()
@@ -359,10 +366,14 @@ DetailButton.grid(row=0, column=1, sticky="e", padx=5, pady=5)
 #TreeViews
 InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
 InventoryTree.grid(row=2,column=0,padx=5, pady=5,rowspan=6,columnspan=2)
-InventoryTree['columns'] = ('Server', 'User', 'Pwd',)
-InventoryTree['displaycolumns'] = ('Server',)
-InventoryTree.column("Server", minwidth=0,width=175)
+InventoryTree['columns'] = ('Server', 'User', 'Pwd','Ip','Os')
+InventoryTree['displaycolumns'] = ('Server','Ip','Os')
+InventoryTree.column("Server", minwidth=0,width=100)
 InventoryTree.heading("Server", text="SERVER",)
+InventoryTree.column("Ip", minwidth=0,width=100)
+InventoryTree.heading("Ip", text="IP",)
+InventoryTree.column("Os", minwidth=0,width=100)
+InventoryTree.heading("Os", text="OS",)
 InventoryTree.heading("User", text="USER")
 InventoryTree.heading("Pwd", text="PWD")
 
@@ -382,16 +393,20 @@ serverNbTab4=Frame(serverNb)
 serverNbTab5=Frame(serverNb)
 serverNbTab6=Frame(serverNb)
 
-#General Status Tab
-serverNbTab1Tree1=ttk.Treeview(serverNbTab1,show='headings',height=7,)
+#Special Settings Tab
+serverNbTab1Tree1=ttk.Treeview(serverNbTab1,show='headings',height=1,)
 serverNbTab1Tree1.grid(row=0,column=0,padx=5, pady=5)
-serverNbTab1Tree1['columns'] = ('Server', 'Ip', 'Os')
-serverNbTab1Tree1.heading("Server", text="SERVER")
-serverNbTab1Tree1.column("Server", minwidth=0,width=100)
-serverNbTab1Tree1.heading("Ip", text="IP")
-serverNbTab1Tree1.column("Ip", minwidth=0,width=100)
-serverNbTab1Tree1.heading("Os", text="OS")
-serverNbTab1Tree1.column("Os", minwidth=0,width=100)
+serverNbTab1Tree1['columns'] = ('ServerInstance', 'ServerName', 'WindowsName', 'NetBiosName','InstanceName')
+serverNbTab1Tree1.heading("ServerInstance", text="SERVER\INSTANCE")
+serverNbTab1Tree1.column("ServerInstance", minwidth=0,width=150)
+serverNbTab1Tree1.heading("ServerName", text="SERVERNAME")
+serverNbTab1Tree1.column("ServerName", minwidth=0,width=150)
+serverNbTab1Tree1.heading("WindowsName", text="WINDOWSNAME")
+serverNbTab1Tree1.column("WindowsName", minwidth=0,width=150)
+serverNbTab1Tree1.heading("NetBiosName", text="NETBIOSNAME")
+serverNbTab1Tree1.column("NetBiosName", minwidth=0,width=150)
+serverNbTab1Tree1.heading("InstanceName", text="INSTANCENAME")
+serverNbTab1Tree1.column("InstanceName", minwidth=0,width=150)
 
 #Disks Tab
 serverNbTab2Tree1=ttk.Treeview(serverNbTab2,show='headings')
@@ -559,7 +574,7 @@ serverNbTab6Tree8.column("retry_sec", minwidth=0,width=145,anchor="center")
 
 
 #Adding all Tabs to the Notebook
-serverNb.add(serverNbTab1, text='Status',)
+serverNb.add(serverNbTab1, text='Special Settings',)
 serverNb.add(serverNbTab2, text='Disks',)
 serverNb.add(serverNbTab3, text='Page File',)
 serverNb.add(serverNbTab4, text='Default Paths',)

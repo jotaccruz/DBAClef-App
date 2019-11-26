@@ -1,5 +1,5 @@
 import wmi
-import pprint
+#import pprint
 
 #Remote Host
 server = "SCAEDYAK02"
