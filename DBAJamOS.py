@@ -1,4 +1,5 @@
 import wmi
+from wmi import *
 #import pprint
 
 #Remote Host
@@ -13,16 +14,22 @@ dir2="winmgmts:{impersonationLevel=impersonate,(LockMemory, !IncreaseQuota)}"\
 #Local Host
 #conn = wmi.WMI("localhost")
 
+#Remote Host
+#conn = wmi.WMI(server,user=username,password=psw)
+
 #for class_name in conn.classes:
-#  if 'Volume' in class_name:
+#  if 'Win32_Service' in class_name:
 #    print (class_name)
     
-#print(wmi.WMI().Win32_Volume.methods.keys())
+#print(wmi.WMI().Win32_Service.methods.keys())
 
-#print(wmi.WMI().win32_ComputerSystem.properties.keys())
+#print(wmi.WMI().Win32_Service.properties.keys())
     
-def diskinfo(server="SCAEDYAK02"):
-    conn = wmi.WMI(server,user=username,password=psw)
+def diskinfo(selected_modes, server="SCAEDYAK02"):
+    if (selected_modes == 1):
+        conn = wmi.WMI(server)
+    else:
+        conn = wmi.WMI(server,user=username,password=psw)
     diskinfo = {}
     disks = []
     for Volumes in conn.Win32_Volume():
@@ -45,8 +52,11 @@ def diskinfo(server="SCAEDYAK02"):
             disks.append(diskinfo)
     return disks
 
-def pageinfo(server="SCAEDYAK02"):
-    conn = wmi.WMI(server,user=username,password=psw)
+def pageinfo(selected_modes, server="SCAEDYAK02",):
+    if (selected_modes == 1):
+        conn = wmi.WMI(server)
+    else:
+        conn = wmi.WMI(server,user=username,password=psw)
     pageinfo = {'SystemName': ""\
                 ,'Automatic': ""\
                 ,'Caption': ""\
@@ -70,6 +80,34 @@ def pageinfo(server="SCAEDYAK02"):
                                  ,'MaximunSize': Volumes2.MaximunSize})
         pages.append(pageinfo)
     return pages
+
+
+def mssqlinfo(selected_modes, server="SCAEDYAK02",):
+    if (selected_modes == 1):
+        conn = wmi.WMI(server)
+    else:
+        conn = wmi.WMI(server,user=username,password=psw)
+    mssqlinfo = {}
+    services = []
+    for Services in conn.Win32_Service():
+        if Services.DisplayName.startswith("SQL"):
+            #print("SystemName:{0} Label:{1} Capacity:{2} DriveLetter:{3}"\
+            #      "BlockSize:{4} Name:{5} FreeSpace:{6}"\
+            #      .format(Volumes.SystemName,Volumes.Label,\
+            #              int(int(Volumes.Capacity)/1024/1024/1024)\
+            #              ,Volumes.DriveLetter,Volumes.BlockSize,Volumes.Name\
+            #              ,Volumes.FreeSpace))
+            mssqlinfo={'SystemName': Services.SystemName\
+                      ,'DisplayName': Services.DisplayName\
+                      ,'Description': Services.Description\
+                      ,'Started': Services.Started\
+                      ,'StartMode': Services.StartMode\
+                      ,'StartName': Services.StartName\
+                      ,'State': Services.State\
+                      ,'Status': Services.Status\
+                      ,'PathName': Services.PathName}
+            services.append(mssqlinfo)
+    return services
 
 #disks=diskinfo()
 #pp = pprint.PrettyPrinter(indent=4)
