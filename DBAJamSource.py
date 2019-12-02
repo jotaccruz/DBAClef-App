@@ -41,15 +41,20 @@ def mysqlconnect():
         
 def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
-    mssqlserver = 'tcp:35.247.3.208,1433'
-    mssqldatabase = 'DBAdmin'
-    mssqlusername = 'test'
-    mssqlpsw = ''
+    #mssqlserver = 'tcp:35.247.3.208,1433'
+    #mssqlserver = 'SCAEDYAK02\GLOBALSOLARWINDS'
+    #mssqldatabase = 'DBAdmin'
+    #mssqlusername = 'test'
+    #mssqlpsw = ''
     #mssqlinstancename = 'localhost'
+    #mssqlconnection_string_user = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
+    #                          +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
+    #                          +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
+    #                          "TrustServerCertificate=yes;"
+                              
     mssqlconnection_string = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
-                              +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
-                              +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
-                              "TrustServerCertificate=yes;"
+                              +mssqlserver+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
+                              "TrustServerCertificate=yes;Application Name=DBAJam;"
     try:
         mssqlconn = pyodbc.connect(mssqlconnection_string)
         return mssqlconn

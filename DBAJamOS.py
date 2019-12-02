@@ -64,7 +64,7 @@ def pageinfo(selected_modes, server="SCAEDYAK02",):
                 ,'CurrentUsage': ""\
                 ,'PeakUsage': ""\
                 ,'InitialSize': ""\
-                ,'MaximunSize': ""}
+                ,'MaximumSize': ""}
     pages = []
     for Volumes3 in conn.win32_ComputerSystem():
         pageinfo.update({'Automatic': Volumes3.AutomaticManagedPagefile\
@@ -77,7 +77,7 @@ def pageinfo(selected_modes, server="SCAEDYAK02",):
                                  ,'Caption': Volumes2.Caption\
                                  ,'Status': Volumes2.Status\
                                  ,'InitialSize': Volumes2.InitialSize\
-                                 ,'MaximunSize': Volumes2.MaximunSize})
+                                 ,'MaximumSize': Volumes2.MaximumSize})
         pages.append(pageinfo)
     return pages
 
@@ -116,4 +116,4 @@ def mssqlinfo(selected_modes, server="SCAEDYAK02",):
     
 #pages=pageinfo()
 #for row in pages:
-#    print (row['Automatic'],row['SystemName'],row['Caption'],row['Status'],row['CurrentUsage'],row['PeakUsage'],row['InitialSize'],row['MaximunSize'])
+#    print (row['Automatic'],row['SystemName'],row['Caption'],row['Status'],row['CurrentUsage'],row['PeakUsage'],row['InitialSize'],row['MaximumSize'])

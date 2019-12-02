@@ -107,7 +107,7 @@ def get_detail_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
-                "User": "",
+                "User": "test",
                 "Pwd": ""
                 }
     else:
@@ -188,7 +188,7 @@ def get_detail_command(mode):
                                                       row['CurrentUsage'],\
                                                       row['PeakUsage'],\
                                                       row['InitialSize'],\
-                                                      row['MaximunSize']),\
+                                                      row['MaximumSize']),\
         tags = ('good',))
 
     #serverNbTab3Tree1.tag_configure('need', background='red')
@@ -261,7 +261,7 @@ def get_detail_command(mode):
         
     sqlexec3="SELECT ISNULL(FailSafeOperator,CONVERT(NVARCHAR(250),\
     'No Fail safe Operator.')) AS \
-    FailSafeOperator, CASE WHEN(ISNULL(FailSafeOperator,1)<>1) \
+    FailSafeOperator, CASE WHEN ISNULL(FailSafeOperator,CONVERT(NVARCHAR(250),'No Fail safe Operator.'))='No Fail safe Operator.' \
     THEN '0' ELSE '1' END as Semaphore FROM #AlertInfo;"
 
     for rows in serverNbTab5Tree2.get_children():
@@ -339,7 +339,7 @@ def get_detail_command(mode):
         serverNbTab6Tree6.insert("", END, values=(row[0]))
 
 #SQL Server Agent is enabled to use Database Mail and Mail Profile is assigned
-    sqlexec="DECLARE @SQLAgentMailProfileEnabled SYSNAME; EXECUTE master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',N'SOFTWARE\Microsoft\MSSQLServer\SQLServerAgent',N'DatabaseMailProfile', @SQLAgentMailProfileEnabled OUTPUT; SELECT CASE WHEN @SQLAgentMailProfileEnabled=1 THEN 'Enabled' ELSE 'Disabled' END AS SQLAgentMailProfileEnabled"
+    sqlexec="DECLARE @SQLAgentMailProfileEnabled SYSNAME; EXECUTE master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',N'SOFTWARE\Microsoft\MSSQLServer\SQLServerAgent',N'DatabaseMailProfile', @SQLAgentMailProfileEnabled OUTPUT; SELECT CASE WHEN COUNT(@SQLAgentMailProfileEnabled)=1 THEN 'Enabled' ELSE 'Disabled' END AS SQLAgentMailProfileEnabled"
 
     for i in serverNbTab6Tree7.get_children():
         serverNbTab6Tree7.delete(i)
@@ -413,7 +413,7 @@ e1=ttk.Entry(inventoryframe,textvariable=server_text,width=20)
 e1.grid(row=1,column=0,padx=5, pady=5)
 
 #Bottoms
-DetailButton = Button(inventoryframe, text='Connect', underline = 0, command=lambda: get_detail_command(ConnMode.get()))
+DetailButton = Button(inventoryframe, text='Connect', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
 DetailButton.grid(row=1, column=1, sticky="e", padx=5, pady=5)
 
 #ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
@@ -466,11 +466,11 @@ serverNbTab1Tree1['columns'] = ('ServerInstance', 'ServerName', 'WindowsName', '
 serverNbTab1Tree1.heading("ServerInstance", text="SERVER\INSTANCE")
 serverNbTab1Tree1.column("ServerInstance", minwidth=0,width=225)
 serverNbTab1Tree1.heading("ServerName", text="SERVERNAME")
-serverNbTab1Tree1.column("ServerName", minwidth=0,width=150)
+serverNbTab1Tree1.column("ServerName", minwidth=0,width=200)
 serverNbTab1Tree1.heading("WindowsName", text="WINDOWSNAME")
 serverNbTab1Tree1.column("WindowsName", minwidth=0,width=150)
 serverNbTab1Tree1.heading("NetBiosName", text="NETBIOSNAME")
-serverNbTab1Tree1.column("NetBiosName", minwidth=0,width=150)
+serverNbTab1Tree1.column("NetBiosName", minwidth=0,width=100)
 serverNbTab1Tree1.heading("InstanceName", text="INSTANCENAME")
 serverNbTab1Tree1.column("InstanceName", minwidth=0,width=150)
 
@@ -526,9 +526,9 @@ serverNbTab2Tree1.column("SUBSize", minwidth=0,width=75)
 serverNbTab3Tree1=ttk.Treeview(serverNbTab3,show='headings')
 serverNbTab3Tree1.grid(row=0,column=0,padx=5, pady=5)
 serverNbTab3Tree1['columns'] = ('SName', 'Automatic', 'Caption','Status',
-                 'CurrentUsage', 'PeakUsage', 'InitialSize', 'MaximunSize')
+                 'CurrentUsage', 'PeakUsage', 'InitialSize', 'MaximumSize')
 serverNbTab3Tree1['displaycolumns'] = ('SName', 'Automatic', 'Caption','Status'
-                 ,'CurrentUsage', 'PeakUsage', 'InitialSize', 'MaximunSize')
+                 ,'CurrentUsage', 'PeakUsage', 'InitialSize', 'MaximumSize')
 serverNbTab3Tree1.heading("SName", text="SERVER")
 serverNbTab3Tree1.column("SName", minwidth=0,width=150)
 serverNbTab3Tree1.heading("Automatic", text="AUTO")
@@ -543,8 +543,8 @@ serverNbTab3Tree1.heading("PeakUsage", text="PUSAGE GB")
 serverNbTab3Tree1.column("PeakUsage", minwidth=0,width=100)
 serverNbTab3Tree1.heading("InitialSize", text="ISIZE GB")
 serverNbTab3Tree1.column("InitialSize", minwidth=0,width=75)
-serverNbTab3Tree1.heading("MaximunSize", text="MSIZE GB")
-serverNbTab3Tree1.column("MaximunSize", minwidth=0,width=75)
+serverNbTab3Tree1.heading("MaximumSize", text="MSIZE GB")
+serverNbTab3Tree1.column("MaximumSize", minwidth=0,width=75)
 
 #Defaulth Paths Tab
 serverNbTab4Tree1=ttk.Treeview(serverNbTab4,show='headings')
