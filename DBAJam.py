@@ -116,7 +116,7 @@ def get_detail_command(mode):
         except IndexError:
             pass
 
-#Tab Special Settings----------------------------------------------------------
+#Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
 #Hostname
@@ -195,10 +195,62 @@ def get_detail_command(mode):
 
 #Tab Default Paths-------------------------------------------------------------
 #------------------------------------------------------------------------------
+    sqlexec="USE master;\
+    IF EXISTS (\
+    SELECT * \
+    FROM INFORMATION_SCHEMA.ROUTINES \
+    WHERE SPECIFIC_SCHEMA = N'dbo'\
+    AND SPECIFIC_NAME = N'get_defaultpathdb' \
+    )\
+    DROP PROCEDURE dbo.get_defaultpathdb;"
+    sqlexec0="CREATE PROCEDURE dbo.get_defaultpathdb\
+	@p1 int = 0, \
+	@p2 int = 0\
+    AS\
+    BEGIN\
+	INSERT INTO #RDPaths\
+	EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer',N'DefaultData';\
+	INSERT INTO #DPaths(Type,Location)\
+	VALUES('DefaultData',LEFT(CONVERT(NVARCHAR(250),SERVERPROPERTY('InstanceDefaultdataPath')),LEN(CONVERT(NVARCHAR(250),SERVERPROPERTY('InstanceDefaultdataPath')))-1));\
+	INSERT INTO #RDPaths\
+	EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer',N'DefaultLog';\
+	INSERT INTO #DPaths(Type,Location)\
+	VALUES('DefaultLog',LEFT(CONVERT(NVARCHAR(250),SERVERPROPERTY('InstanceDefaultLogPath')),LEN(CONVERT(NVARCHAR(250),SERVERPROPERTY('InstanceDefaultLogPath')))-1));\
+	INSERT INTO #RDPaths\
+	EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer',N'BackupDirectory';\
+	INSERT INTO #DPaths(Type,Location)\
+	VALUES('Error',SERVERPROPERTY('ErrorLogFileName'));\
+	DECLARE @Bandera int = 0\
+	DECLARE @Location nvarchar(250) = ''\
+	SELECT @Bandera=1,@Location=CONCAT(CONVERT(NVARCHAR(250),a.Location),'-->',CONVERT(NVARCHAR(250),b.Location))\
+	FROM #RDPaths a CROSS JOIN #DPaths b\
+	WHERE a.Type='DefaultData'\
+	AND a.Type=b.Type\
+	AND a.Location<>b.Location\
+	IF @Bandera=1\
+	BEGIN\
+	BEGIN TRAN\
+	UPDATE #DPaths SET Location=@Location,Restart=1 WHERE Type='DefaultData'\
+	COMMIT\
+	END\
+	SELECT @Bandera=0\
+	SELECT @Location=''\
+	SELECT @Bandera=1,@Location=CONCAT(CONVERT(NVARCHAR(250),a.Location),'-->',CONVERT(NVARCHAR(250),b.Location))\
+	FROM #RDPaths a CROSS JOIN #DPaths b\
+	WHERE a.Type='DefaultLog'\
+	AND a.Type=b.Type\
+	AND a.Location<>b.Location\
+	IF @Bandera=1\
+	UPDATE #DPaths SET Location=@Location,Restart=1 WHERE Type='DefaultLog'\
+    END;COMMIT;"
+    mssqlexec(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+    mssqlexec(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0)
 
     sqlexec1="CREATE TABLE #DPaths(Type nvarchar(50),Location sql_variant, \
     Restart integer);CREATE TABLE #RDPaths(Type nvarchar(50),\
-        Location sql_variant);EXECUTE dbo.get_defaultpathdb;"
+        Location sql_variant);EXECUTE master.dbo.get_defaultpathdb;"
         
     sqlexec2="CREATE TABLE #DPath(Type nvarchar(50),Location nvarchar(250),\
     Restart integer);INSERT INTO #DPath(Type,Location,Restart) SELECT Type,\
@@ -212,7 +264,7 @@ def get_detail_command(mode):
     for i in serverNbTab4Tree1.get_children():
         serverNbTab4Tree1.delete(i)
         
-    for row in mssqldetailsp(selected_row['Server'],"DBAdmin",\
+    for row in mssqldetailsp(selected_row['Server'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2,sqlexec3):
         if (row[2]==1):
@@ -221,6 +273,9 @@ def get_detail_command(mode):
         else:
             serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
                                      tags = ('good',))
+    
+    mssqlexec(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
     #serverNbTab4Tree1.tag_configure('need', background='red')
 
 #Tab Alerts--------------------------------------------------------------------
@@ -267,7 +322,7 @@ def get_detail_command(mode):
     for rows in serverNbTab5Tree2.get_children():
         serverNbTab5Tree2.delete(rows)
         
-    for rows in mssqldetailsp(selected_row['Server'],"DBAdmin",\
+    for rows in mssqldetailsp(selected_row['Server'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2,sqlexec3):
         if (rows[1]=='1'):
@@ -279,7 +334,7 @@ def get_detail_command(mode):
 #------------------------------------------------------------------------------
 
 #SQL Server Agent enabled  
-    sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled;' ELSE 'Enabled' END AS SQLAgentEnabled FROM sys.configurations WHERE [name] ='Agent XPs';"
+    sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled' ELSE 'Enabled' END AS SQLAgentEnabled FROM sys.configurations WHERE [name] ='Agent XPs';"
 
     for i in serverNbTab6Tree1.get_children():
         serverNbTab6Tree1.delete(i)
@@ -299,7 +354,7 @@ def get_detail_command(mode):
         serverNbTab6Tree2.insert("", END, values=(row[0]))
     
 #SQL Database Mail is enabled
-    sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled;' ELSE 'Enabled' END AS DBMailEnabled  FROM sys.configurations WHERE [name] ='Database Mail XPs';"
+    sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled' ELSE 'Enabled' END AS DBMailEnabled  FROM sys.configurations WHERE [name] ='Database Mail XPs';"
 
     for i in serverNbTab6Tree3.get_children():
         serverNbTab6Tree3.delete(i)
@@ -660,7 +715,7 @@ serverNbTab6Tree8.column("retry_sec", minwidth=0,width=145,anchor="center")
 
 
 #Adding all Tabs to the Notebook
-serverNb.add(serverNbTab1, text='Special Settings',)
+serverNb.add(serverNbTab1, text='Services',)
 serverNb.add(serverNbTab2, text='Disks',)
 serverNb.add(serverNbTab3, text='Page File',)
 serverNb.add(serverNbTab4, text='Default Paths',)

@@ -47,12 +47,12 @@ def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
     #mssqlusername = 'test'
     #mssqlpsw = ''
     #mssqlinstancename = 'localhost'
-    #mssqlconnection_string_user = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
-    #                          +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
-    #                          +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
-    #                          "TrustServerCertificate=yes;"
+    mssqlconnection_string_user = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
+                              +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
+                              +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
+                              "TrustServerCertificate=yes;"
                               
-    mssqlconnection_string = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
+    mssqlconnection_string = "DRIVER={ODBC Driver 11 for SQL Server};SERVER="\
                               +mssqlserver+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
                               "TrustServerCertificate=yes;Application Name=DBAJam;"
     try:
@@ -62,6 +62,13 @@ def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
         sqlstate = ex.args[1]
         messagebox.showinfo ("Connection Error", sqlstate)
         
+def mssqlexec(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
+    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+    cur=conn.cursor()
+    conn.autocommit = True
+    cur.execute(sqlexec)
+    conn.close()
+
 def mssqldetail(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
     conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
