@@ -37,6 +37,9 @@ def getRbselected(mode):
         view_command()
     else:
         cleanall(InventoryTree)
+        cleanall(StatusTree1)
+        cleanall(StatusTree2)
+        cleanall(StatusTree3)
         cleanall(serverNbTab1Tree1)
         cleanall(serverNbTab1Tree2)
         cleanall(serverNbTab2Tree1)
@@ -116,6 +119,84 @@ def get_detail_command(mode):
         except IndexError:
             pass
 
+#Tab Status
+#Last startup
+    sqlexec1="SELECT\
+    CAST(create_date AS VARCHAR(100)) as Last_Startup,\
+    CAST(DATEDIFF(hh,create_date,getdate())/24. as numeric (23,2)) AS days_uptime\
+    FROM    sys.databases\
+    WHERE   database_id = 2;"
+    for i in StatusTree1.get_children():
+        StatusTree1.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        StatusTree1.insert("", END, values=(row[0],row[1]))
+        
+#CPUs
+    sqlexec1="DECLARE @StringToExecute NVARCHAR(4000);\
+    CREATE TABLE #test (cpu_count int,physical_memory_GB int);\
+    IF EXISTS ( SELECT  *\
+	FROM sys.all_objects o\
+    INNER JOIN sys.all_columns c ON o.object_id = c.object_id\
+    WHERE   o.name = 'dm_os_sys_info'\
+    AND c.name = 'physical_memory_kb' )\
+	BEGIN\
+    SET @StringToExecute = '\
+    SELECT\
+    cpu_count,\
+    CAST(ROUND((physical_memory_kb / 1024.0 / 1024), 1) AS INT) as physical_memory_GB\
+    FROM sys.dm_os_sys_info';\
+	END\
+    ELSE IF EXISTS ( SELECT  *\
+    FROM    sys.all_objects o\
+    INNER JOIN sys.all_columns c ON o.object_id = c.object_id\
+    WHERE o.name = 'dm_os_sys_info'\
+    AND c.name = 'physical_memory_in_bytes' )\
+    BEGIN\
+    SET @StringToExecute = '\
+    SELECT\
+    cpu_count,\
+    CAST(ROUND((physical_memory_in_bytes / 1024.0 / 1024.0 / 1024.0 ), 1) AS INT) as physical_memory_GB\
+    FROM sys.dm_os_sys_info';\
+    END\
+    INSERT INTO #test\
+    EXECUTE(@StringToExecute);"
+
+    sqlexec3="SELECT cpu_count ,physical_memory_GB FROM #test;"
+    
+    for i in StatusTree2.get_children():
+        StatusTree2.delete(i)
+        
+    for row in mssqldetail2sql(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
+                           sqlexec3):
+        StatusTree2.insert("", END, values=(row[0],row[1]))
+
+#Version
+    sqlexec1="IF EXISTS (SELECT * FROM sys.dm_os_performance_counters)\
+    SELECT\
+	TOP 1 CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(100)) as ProductVersion,\
+	CAST(SERVERPROPERTY('ProductLevel') AS NVARCHAR(100)) as PatchLevel,\
+	CAST(SERVERPROPERTY('Edition') AS VARCHAR(100)) as Edition,\
+	CASE WHEN (CAST(SERVERPROPERTY('IsClustered') AS VARCHAR(100))=0) THEN 'NOT' ELSE 'YES' END as IsClustered,\
+	CASE WHEN (CAST(COALESCE(SERVERPROPERTY('IsHadrEnabled'),0) AS VARCHAR(100))=1) THEN 'YES' ELSE 'NOT' END as AlwaysOnEnabled,\
+	'' AS Warning\
+	FROM sys.dm_os_performance_counters;\
+    ELSE\
+	SELECT\
+    TOP 1 CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(100)) as ProductVersion,\
+	CAST(SERVERPROPERTY('ProductLevel') AS NVARCHAR(100)) as PatchLevel,\
+	CAST(SERVERPROPERTY('Edition') AS VARCHAR(100)) as Edition,\
+	CASE WHEN (CAST(SERVERPROPERTY('IsClustered') AS VARCHAR(100))=0) THEN 'NOT' ELSE 'YES' END as IsClustered,\
+	CASE WHEN (CAST(COALESCE(SERVERPROPERTY('IsHadrEnabled'),0) AS VARCHAR(100))=1) THEN 'YES' ELSE 'NOT' END as AlwaysOnEnabled,\
+	'WARNING - No records found in sys.dm_os_performance_counters' AS Warning;"
+    for i in StatusTree3.get_children():
+        StatusTree3.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
 #Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -453,9 +534,10 @@ window.wm_title("DBAJam")
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
 inventoryframe.grid(row=0,column=0,padx=5, pady=5)
 
-Statusframe1 = ttk.LabelFrame(window, width=525, height=192,text="Status")
-Statusframe1.grid(row=0,column=1,padx=5, pady=5)
+statusframe = ttk.LabelFrame(window, width=525, height=192,text="Status")
+statusframe.grid(row=0,column=1,padx=5, pady=5)
 
+#RadioButton Controls
 ConnMode = IntVar()
 ConnMode.set(1)
 
@@ -499,6 +581,41 @@ InventoryTree.heading("Pwd", text="PWD")
 #    InventoryTree.state(('!disabled',))
     
 InventoryTree.bind('<Double-Button-1>',lambda x: DetailButton.invoke())
+
+StatusTree1=ttk.Treeview(statusframe,show='headings',height=1)
+StatusTree1.grid(row=0,column=0,padx=5, pady=5,rowspan=2,columnspan=2,sticky="w")
+StatusTree1['columns'] = ('Last_Startup', 'days_uptime')
+StatusTree1['displaycolumns'] = ('Last_Startup','days_uptime')
+StatusTree1.column("Last_Startup", minwidth=0,width=120)
+StatusTree1.heading("Last_Startup", text="LAST STARTUP",)
+StatusTree1.column("days_uptime", minwidth=0,width=90)
+StatusTree1.heading("days_uptime", text="DAYS UPTIME",)
+
+StatusTree2=ttk.Treeview(statusframe,show='headings',height=1)
+StatusTree2.grid(row=0,column=2,padx=5, pady=5,rowspan=2,columnspan=1,sticky="w")
+StatusTree2['columns'] = ('cpu_count', 'physical_memory_GB')
+StatusTree2['displaycolumns'] = ('cpu_count', 'physical_memory_GB')
+StatusTree2.column("cpu_count", minwidth=0,width=40)
+StatusTree2.heading("cpu_count", text="CPUs",)
+StatusTree2.column("physical_memory_GB", minwidth=0,width=125)
+StatusTree2.heading("physical_memory_GB", text="P MEMORY",)
+
+StatusTree3=ttk.Treeview(statusframe,show='headings',height=1)
+StatusTree3.grid(row=2,column=0,padx=5, pady=5,rowspan=2,columnspan=5)
+StatusTree3['columns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustered', 'AlwaysOnEnabled', 'Warning')
+StatusTree3['displaycolumns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustered', 'AlwaysOnEnabled', 'Warning')
+StatusTree3.column("ProductVersion", minwidth=0,width=75)
+StatusTree3.heading("ProductVersion", text="VERSION",)
+StatusTree3.column("PatchLevel", minwidth=0,width=60)
+StatusTree3.heading("PatchLevel", text="PATCH",)
+StatusTree3.column("Edition", minwidth=0,width=150)
+StatusTree3.heading("Edition", text="EDITION",)
+StatusTree3.column("IsClustered", minwidth=0,width=60)
+StatusTree3.heading("IsClustered", text="CLUSTER",)
+StatusTree3.column("AlwaysOnEnabled", minwidth=0,width=75)
+StatusTree3.heading("AlwaysOnEnabled", text="ALWAYS ON",)
+StatusTree3.column("Warning", minwidth=0,width=100)
+StatusTree3.heading("Warning", text="WARNING",)
 
 detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
 detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2)

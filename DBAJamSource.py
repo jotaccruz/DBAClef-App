@@ -47,7 +47,7 @@ def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
     #mssqlusername = 'test'
     #mssqlpsw = ''
     #mssqlinstancename = 'localhost'
-    mssqlconnection_string_user = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="\
+    mssqlconnection_string_user = "DRIVER={ODBC Driver 11 for SQL Server};SERVER="\
                               +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
                               +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
                               "TrustServerCertificate=yes;"
@@ -83,6 +83,16 @@ def mssqldetailsp(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
     cur=conn.cursor()
     cur.execute(sqlexec1)
     cur.execute(sqlexec2)
+    cur.execute(sqlexec3)
+    rows=cur.fetchall()
+    conn.close()
+    return rows
+
+def mssqldetail2sql(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
+                  sqlexec3):
+    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+    cur=conn.cursor()
+    cur.execute(sqlexec1)
     cur.execute(sqlexec3)
     rows=cur.fetchall()
     conn.close()
