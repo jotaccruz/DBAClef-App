@@ -3,7 +3,7 @@
 -- =============================================
 
 -- Drop stored procedure if it already exists
-USE DBAdmin;
+USE master;
 
 IF EXISTS (
   SELECT * 
