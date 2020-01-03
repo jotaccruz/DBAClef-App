@@ -1,15 +1,16 @@
 import wmi
 from wmi import *
+
 #import pprint
 
 #Remote Host
-server = "SCAEDYAK02"
-username = 'ti\jcruz.admin'
-psw = '060409@Flaca'
-namespace="WMI"
-dir1="\root\cimv2:Win32_Volume"
-dir2="winmgmts:{impersonationLevel=impersonate,(LockMemory, !IncreaseQuota)}"\
-+"!\\" + server + dir1
+#server = "SCAEDYAK02"
+#username = 'ti\jcruz.admin'
+#psw = 'Flaca060409@'
+#namespace="WMI"
+#dir1="\root\cimv2:Win32_Volume"
+#dir2="winmgmts:{impersonationLevel=impersonate,(LockMemory, !IncreaseQuota)}"\
+#+"!\\" + server + dir1
 
 #Local Host
 #conn = wmi.WMI("localhost")
@@ -25,11 +26,11 @@ dir2="winmgmts:{impersonationLevel=impersonate,(LockMemory, !IncreaseQuota)}"\
 
 #print(wmi.WMI().Win32_Service.properties.keys())
     
-def diskinfo(selected_modes, server="SCAEDYAK02"):
+def diskinfo(selected_modes, server, wmiuser, wmipass):
     if (selected_modes == 1):
         conn = wmi.WMI(server)
     else:
-        conn = wmi.WMI(server,user=username,password=psw)
+        conn = wmi.WMI(server,user=wmiuser,password=wmipass)
     diskinfo = {}
     disks = []
     for Volumes in conn.Win32_Volume():
@@ -42,21 +43,21 @@ def diskinfo(selected_modes, server="SCAEDYAK02"):
             #              ,Volumes.FreeSpace))
             diskinfo={'SystemName': Volumes.SystemName\
                       ,'Label': Volumes.Label\
-                      ,'Capacity': int(int(Volumes.Capacity)/1024/1024/1024)\
+                      ,'Capacity': int(int(0 if Volumes.Capacity is None else Volumes.Capacity)/1024/1024/1024)\
                       ,'DriveLetter': Volumes.DriveLetter\
                       ,'FileSystem': Volumes.FileSystem\
-                      ,'BlockSize': int(int(Volumes.BlockSize)/1024)\
+                      ,'BlockSize': int(int(0 if Volumes.BlockSize is None else Volumes.BlockSize)/1024)\
                       ,'Name': Volumes.Name\
-                      ,'FreeSpace': int(int(Volumes.FreeSpace)/1024/1024/1024)\
+                      ,'FreeSpace': int(int(0 if Volumes.FreeSpace is None else Volumes.FreeSpace)/1024/1024/1024)\
                       ,'DriveType': Volumes.DriveType}
             disks.append(diskinfo)
     return disks
 
-def pageinfo(selected_modes, server="SCAEDYAK02",):
+def pageinfo(selected_modes, server, wmiuser, wmipass):
     if (selected_modes == 1):
         conn = wmi.WMI(server)
     else:
-        conn = wmi.WMI(server,user=username,password=psw)
+        conn = wmi.WMI(server,user=wmiuser,password=wmipass)
     pageinfo = {'SystemName': ""\
                 ,'Automatic': ""\
                 ,'Caption': ""\
@@ -82,11 +83,11 @@ def pageinfo(selected_modes, server="SCAEDYAK02",):
     return pages
 
 
-def mssqlinfo(selected_modes, server="SCAEDYAK02",):
+def mssqlinfo(selected_modes, server, wmiuser, wmipass):
     if (selected_modes == 1):
         conn = wmi.WMI(server)
     else:
-        conn = wmi.WMI(server,user=username,password=psw)
+        conn = wmi.WMI(server,user=wmiuser,password=wmipass)
     mssqlinfo = {}
     services = []
     for Services in conn.Win32_Service():

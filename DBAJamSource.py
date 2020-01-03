@@ -12,6 +12,9 @@ import pyodbc
 import mysql.connector
 import tkinter
 from tkinter import messagebox
+import DBAJamDrivers
+from DBAJamDrivers import *
+
 #from mysql.connector.constants import ClientFlag
 #from mysql.connector import errorcode
 
@@ -39,22 +42,26 @@ def mysqlconnect():
     except mysql.connector.Error as err:
         messagebox.showinfo ("Connection Error", err)
         
-def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
+def mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
+    mssqldriver = mssqlodbc()
+    #print (mssqldriver)
     #mssqlserver = 'tcp:35.247.3.208,1433'
-    #mssqlserver = 'SCAEDYAK02\GLOBALSOLARWINDS'
+    #mssqlserver = 'SCAEDYAK02'
+    #mssqlinstance = 'GLOBALSOLARWINDS'
     #mssqldatabase = 'DBAdmin'
     #mssqlusername = 'test'
     #mssqlpsw = ''
     #mssqlinstancename = 'localhost'
-    mssqlconnection_string_user = "DRIVER={ODBC Driver 11 for SQL Server};SERVER="\
-                              +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
-                              +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
-                              "TrustServerCertificate=yes;"
+    #mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
+    #                          +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
+    #                          +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
+    #                          "TrustServerCertificate=yes;Application Name=DBAJam;"
                               
-    mssqlconnection_string = "DRIVER={ODBC Driver 11 for SQL Server};SERVER="\
-                              +mssqlserver+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
+    mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
+                              +mssqlserver+"\\"+mssqlinstance+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
                               "TrustServerCertificate=yes;Application Name=DBAJam;"
+    #print (mssqlconnection_string)
     try:
         mssqlconn = pyodbc.connect(mssqlconnection_string)
         return mssqlconn
@@ -62,24 +69,24 @@ def mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw):
         sqlstate = ex.args[1]
         messagebox.showinfo ("Connection Error", sqlstate)
         
-def mssqlexec(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
-    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+def mssqlexec(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
+    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     conn.autocommit = True
     cur.execute(sqlexec)
     conn.close()
 
-def mssqldetail(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
-    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+def mssqldetail(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
+    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec)
     rows=cur.fetchall()
     conn.close()
     return rows
 
-def mssqldetailsp(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
+def mssqldetailsp(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
                   sqlexec2,sqlexec3):
-    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec1)
     cur.execute(sqlexec2)
@@ -88,9 +95,9 @@ def mssqldetailsp(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
     conn.close()
     return rows
 
-def mssqldetail2sql(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
+def mssqldetail2sql(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
                   sqlexec3):
-    conn=mssqlconnect(mssqlserver,mssqldatabase,mssqlusername,mssqlpsw)
+    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec1)
     cur.execute(sqlexec3)

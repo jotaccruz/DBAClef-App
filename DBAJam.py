@@ -1,6 +1,6 @@
 #pyinstaller DBAJam.py --windowed --onefile
+#conda install -c anaconda beautifulsoup4 
 
-# -*- coding: utf-8 -*-
 """
 Python 3.7.4
 Created on Fri Nov  8 10:57:06 2019
@@ -20,12 +20,17 @@ User can:
 import tkinter
 from tkinter import *
 from tkinter import ttk
+from tkinter import simpledialog
 import DBAJamSource
 from DBAJamSource import *
 import DBAJamOS
 from DBAJamOS import *
 import wmi
 from wmi import *
+import DBAJamWeb
+from DBAJamWeb import *
+import PIL
+from PIL import Image,ImageTk
 
 window=Tk()
 
@@ -40,6 +45,7 @@ def getRbselected(mode):
         cleanall(StatusTree1)
         cleanall(StatusTree2)
         cleanall(StatusTree3)
+        cleanall(StatusTree4)
         cleanall(serverNbTab1Tree1)
         cleanall(serverNbTab1Tree2)
         cleanall(serverNbTab2Tree1)
@@ -89,17 +95,19 @@ def view_command():
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
     
-    query="SELECT srv_name as SERVER, srv_user as USER, SRV_PWD as PWD,"\
-            " srv_ip as IP, srv_os as OS FROM lgm_servers WHERE"+ \
+    query="SELECT srv_name as SERVER, 'GLOBALSOLARWINDS' as INSTANCE, srv_ip as IP,"+\
+            "'1433' as PORT, srv_user as USER, SRV_PWD as PWD, srv_os as OS"+\
+            " FROM lgm_servers WHERE"+\
             " srv_name in"+\
             " ('SCAEDYAK02','SUSWEYAK05');"
+    #print (query)
     #query="SELECT srv_name as SERVER, srv_ip as IP, srv_os as OS,"\
     #       "srv_type as ENGINE, srv_location as LOCATION, srv_domain "\
     #        "as DOMAIN FROM lgm_servers WHERE"+ \
     #        " srv_location = 'GCP' and srv_active=1 and srv_name in"+\
     #        " ('SUSWEYAK03','SUSWEYAK05');"
     for row in dbservers(query):
-        InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],row[4]))
+        InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6]))
 
 #---
 def get_selected_command(event):
@@ -107,15 +115,22 @@ def get_selected_command(event):
 
 #---
 def get_detail_command(mode):
+
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
                 "User": "test",
                 "Pwd": ""
                 }
+        wmiuser=''
+        wmipass=''
     else:
         try:
             selected_row=InventoryTree.set(InventoryTree.selection())
+            
+            #WMI Authentication
+            wmiuser = simpledialog.askstring("WMI Credential", "Username (ti\\username)", parent=window)
+            wmipass = simpledialog.askstring("WMI Credential", "Password:", show='*', parent=window)
         except IndexError:
             pass
 
@@ -129,7 +144,7 @@ def get_detail_command(mode):
     for i in StatusTree1.get_children():
         StatusTree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree1.insert("", END, values=(row[0],row[1]))
         
@@ -168,7 +183,7 @@ def get_detail_command(mode):
     for i in StatusTree2.get_children():
         StatusTree2.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
         StatusTree2.insert("", END, values=(row[0],row[1]))
@@ -194,9 +209,60 @@ def get_detail_command(mode):
     for i in StatusTree3.get_children():
         StatusTree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
+
+#Missing updates
+    
+    sqlexec1="DECLARE @ProductVersion VARCHAR(100)\
+    SELECT @ProductVersion = CAST(SERVERPROPERTY('productversion') AS varchar(100))\
+    DECLARE @Major VARCHAR(100)\
+    DECLARE @Minor VARCHAR(100)\
+    SELECT @Minor = PARSENAME(@ProductVersion, 1)\
+    SELECT @Major = PARSENAME(@ProductVersion, 4)\
+    SELECT\
+    CASE WHEN @Major IS NULL THEN @ProductVersion ELSE LEFT(@ProductVersion,LEN(@ProductVersion)-CHARINDEX('.',REVERSE(@ProductVersion))) END AS VERSION;"
+    
+    for i in StatusTree4.get_children():
+        StatusTree4.delete(i)
+        
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        version = mssqlversioncomplete(row[0])
+        #version = mssqlversioncomplete("12.0.6259")
+        #print (version)
+    for dic in version:
+        list=[]
+        if 'Version' in dic:
+            list.append(dic['Version'])
+            
+        if 'SupportedUntil' in dic:
+            list.append(dic['SupportedUntil'])
+        else:
+            list.append('')
+            
+        if 'Name' in dic:
+            list.append(dic['Name'])
+        else:
+            list.append('')
+            
+        if 'SP' in dic:
+            list.append(dic['SP'])
+        else:
+            list.append('')
+            
+        if 'CU' in dic:
+            list.append(dic['CU'])
+        else:
+            list.append('')
+            
+        if 'KBList' in dic:
+            list.append(dic['KBList'])
+        else:
+            list.append('')
+            
+        StatusTree4.insert("",END,values=(list))
 #Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -206,7 +272,7 @@ def get_detail_command(mode):
     for i in serverNbTab1Tree1.get_children():
         serverNbTab1Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
     
@@ -214,7 +280,7 @@ def get_detail_command(mode):
     for i in serverNbTab1Tree2.get_children():
         serverNbTab1Tree2.delete(i)
         
-    for row in mssqlinfo(mode, selected_row['Server']):
+    for row in mssqlinfo(mode, selected_row['Server'], wmiuser, wmipass):
         if (row['State'] == "Stopped"):
             serverNbTab1Tree2.insert("", END, values=(row['SystemName'],row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('need',))
         else:
@@ -228,7 +294,7 @@ def get_detail_command(mode):
     for i in serverNbTab2Tree1.get_children():
         serverNbTab2Tree1.delete(i)
         
-    for row in diskinfo(mode, selected_row['Server']):
+    for row in diskinfo(mode, selected_row['Server'], wmiuser, wmipass):
         if (row['DriveType'] == 3):
             if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
                 serverNbTab2Tree1.insert("", END, values=(row['SystemName'],\
@@ -261,7 +327,7 @@ def get_detail_command(mode):
     for i in serverNbTab3Tree1.get_children():
         serverNbTab3Tree1.delete(i)
         
-    for row in pageinfo(mode, selected_row['Server']):
+    for row in pageinfo(mode, selected_row['Server'], wmiuser, wmipass):
         serverNbTab3Tree1.insert("", END, values=(row['SystemName'],\
                                                       row['Automatic'],\
                                                       row['Caption'],\
@@ -324,9 +390,9 @@ def get_detail_command(mode):
 	IF @Bandera=1\
 	UPDATE #DPaths SET Location=@Location,Restart=1 WHERE Type='DefaultLog'\
     END;COMMIT;"
-    mssqlexec(selected_row['Server'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-    mssqlexec(selected_row['Server'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0)
 
     sqlexec1="CREATE TABLE #DPaths(Type nvarchar(50),Location sql_variant, \
@@ -345,7 +411,7 @@ def get_detail_command(mode):
     for i in serverNbTab4Tree1.get_children():
         serverNbTab4Tree1.delete(i)
         
-    for row in mssqldetailsp(selected_row['Server'],"master",\
+    for row in mssqldetailsp(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2,sqlexec3):
         if (row[2]==1):
@@ -355,7 +421,7 @@ def get_detail_command(mode):
             serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
                                      tags = ('good',))
     
-    mssqlexec(selected_row['Server'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
     #serverNbTab4Tree1.tag_configure('need', background='red')
 
@@ -370,7 +436,7 @@ def get_detail_command(mode):
     for i in serverNbTab5Tree1.get_children():
         serverNbTab5Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree1.insert("", END, values=(row[0],row[1],row[2],row[3]))
     
@@ -381,7 +447,7 @@ def get_detail_command(mode):
     for i in serverNbTab5Tree3.get_children():
         serverNbTab5Tree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]))
     
@@ -403,7 +469,7 @@ def get_detail_command(mode):
     for rows in serverNbTab5Tree2.get_children():
         serverNbTab5Tree2.delete(rows)
         
-    for rows in mssqldetailsp(selected_row['Server'],"master",\
+    for rows in mssqldetailsp(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2,sqlexec3):
         if (rows[1]=='1'):
@@ -420,7 +486,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree1.get_children():
         serverNbTab6Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree1.insert("", END, values=(row[0]))
 
@@ -430,7 +496,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree2.get_children():
         serverNbTab6Tree2.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree2.insert("", END, values=(row[0]))
     
@@ -440,7 +506,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree3.get_children():
         serverNbTab6Tree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree3.insert("", END, values=(row[0]))
 
@@ -450,7 +516,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree4.get_children():
         serverNbTab6Tree4.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree4.insert("", END, values=(row[0]))
 
@@ -460,7 +526,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree5.get_children():
         serverNbTab6Tree5.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree5.insert("", END, values=(row[0]))
 
@@ -470,7 +536,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree6.get_children():
         serverNbTab6Tree6.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree6.insert("", END, values=(row[0]))
 
@@ -480,7 +546,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree7.get_children():
         serverNbTab6Tree7.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree7.insert("", END, values=(row[0]))
 
@@ -490,7 +556,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree8.get_children():
         serverNbTab6Tree8.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree8.insert("", END, values=(row[0]))
 
@@ -547,11 +613,15 @@ Radiobutton(inventoryframe, text="Local", variable=ConnMode, value=1,command= la
 #Texts
 server_text=StringVar()
 e1=ttk.Entry(inventoryframe,textvariable=server_text,width=20)
-e1.grid(row=1,column=0,padx=5, pady=5)
+e1.grid(row=1,column=0,padx=5, pady=5,sticky="w")
+
+instance=StringVar()
+e2=ttk.Entry(inventoryframe,textvariable=instance,width=20)
+e2.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
 #Bottoms
-DetailButton = Button(inventoryframe, text='Connect', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
-DetailButton.grid(row=1, column=1, sticky="e", padx=5, pady=5)
+DetailButton = ttk.Button(inventoryframe, text='Connect', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
+DetailButton.grid(row=1, column=2, sticky="e", padx=5, pady=5)
 
 #ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
 #                      command=get_detail_command)
@@ -563,17 +633,22 @@ DetailButton.grid(row=1, column=1, sticky="e", padx=5, pady=5)
 
 #TreeViews
 InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
-InventoryTree.grid(row=2,column=0,padx=5, pady=5,rowspan=6,columnspan=2)
-InventoryTree['columns'] = ('Server', 'User', 'Pwd','Ip','Os')
-InventoryTree['displaycolumns'] = ('Server','Ip','Os')
-InventoryTree.column("Server", minwidth=0,width=100)
+InventoryTree.grid(row=3,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
+InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd','Os')
+InventoryTree['displaycolumns'] = ('Server', 'Instance', 'Ip', 'Port', 'Os')
+InventoryTree.column("Server", minwidth=0,width=85)
 InventoryTree.heading("Server", text="SERVER",)
-InventoryTree.column("Ip", minwidth=0,width=100)
+InventoryTree.column("Instance", minwidth=0,width=140)
+InventoryTree.heading("Instance", text="INSTANCE",)
+InventoryTree.column("Ip", minwidth=0,width=80)
 InventoryTree.heading("Ip", text="IP",)
-InventoryTree.column("Os", minwidth=0,width=100)
+InventoryTree.column("Port", minwidth=0,width=40)
+InventoryTree.heading("Port", text="PORT",)
+InventoryTree.column("Os", minwidth=0,width=80)
 InventoryTree.heading("Os", text="OS",)
 InventoryTree.heading("User", text="USER")
 InventoryTree.heading("Pwd", text="PWD")
+
 
 #if (selected_mode == 1):
 #    InventoryTree.state(('disabled',))
@@ -582,8 +657,17 @@ InventoryTree.heading("Pwd", text="PWD")
     
 InventoryTree.bind('<Double-Button-1>',lambda x: DetailButton.invoke())
 
+#Img = Image.open("dbserver2.jpg")
+#Image = ImageTk.PhotoImage(Img)
+
+#dbSrvButton1 = ttk.Button(statusframe, image=Image)
+#dbSrvButton1.grid(row=0,column=0,padx=5, pady=5,sticky="w")
+
+#dbSrvButton2 = ttk.Button(statusframe, image=Image)
+#dbSrvButton2.grid(row=0,column=1,padx=5, pady=5,sticky="w")
+
 StatusTree1=ttk.Treeview(statusframe,show='headings',height=1)
-StatusTree1.grid(row=0,column=0,padx=5, pady=5,rowspan=2,columnspan=2,sticky="w")
+StatusTree1.grid(row=1,column=0,padx=5, pady=5,rowspan=2,columnspan=2,sticky="w")
 StatusTree1['columns'] = ('Last_Startup', 'days_uptime')
 StatusTree1['displaycolumns'] = ('Last_Startup','days_uptime')
 StatusTree1.column("Last_Startup", minwidth=0,width=120)
@@ -592,7 +676,7 @@ StatusTree1.column("days_uptime", minwidth=0,width=90)
 StatusTree1.heading("days_uptime", text="DAYS UPTIME",)
 
 StatusTree2=ttk.Treeview(statusframe,show='headings',height=1)
-StatusTree2.grid(row=0,column=2,padx=5, pady=5,rowspan=2,columnspan=1,sticky="w")
+StatusTree2.grid(row=3,column=2,padx=5, pady=5,rowspan=2,columnspan=1,sticky="w")
 StatusTree2['columns'] = ('cpu_count', 'physical_memory_GB')
 StatusTree2['displaycolumns'] = ('cpu_count', 'physical_memory_GB')
 StatusTree2.column("cpu_count", minwidth=0,width=40)
@@ -601,7 +685,7 @@ StatusTree2.column("physical_memory_GB", minwidth=0,width=125)
 StatusTree2.heading("physical_memory_GB", text="P MEMORY",)
 
 StatusTree3=ttk.Treeview(statusframe,show='headings',height=1)
-StatusTree3.grid(row=2,column=0,padx=5, pady=5,rowspan=2,columnspan=5)
+StatusTree3.grid(row=4,column=0,padx=5, pady=5,rowspan=2,columnspan=5,sticky="w")
 StatusTree3['columns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustered', 'AlwaysOnEnabled', 'Warning')
 StatusTree3['displaycolumns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustered', 'AlwaysOnEnabled', 'Warning')
 StatusTree3.column("ProductVersion", minwidth=0,width=75)
@@ -617,6 +701,23 @@ StatusTree3.heading("AlwaysOnEnabled", text="ALWAYS ON",)
 StatusTree3.column("Warning", minwidth=0,width=100)
 StatusTree3.heading("Warning", text="WARNING",)
 
+StatusTree4=ttk.Treeview(statusframe,show='headings',height=3)
+StatusTree4.grid(row=6,column=0,padx=5, pady=5,rowspan=2,columnspan=5,sticky="w")
+StatusTree4['columns'] = ('Version', 'Eos', 'Name', 'Sp', 'Cu', 'KBList',)
+StatusTree4['displaycolumns'] = ('Version', 'Eos', 'Name', 'Sp', 'Cu', 'KBList', )
+StatusTree4.column("Version", minwidth=0,width=75)
+StatusTree4.heading("Version", text="VERSION",)
+StatusTree4.column("Eos", minwidth=0,width=60)
+StatusTree4.heading("Eos", text="EOS",)
+StatusTree4.column("Name", minwidth=0,width=70)
+StatusTree4.heading("Name", text="NAME",)
+StatusTree4.column("Sp", minwidth=0,width=60)
+StatusTree4.heading("Sp", text="SP",)
+StatusTree4.column("Cu", minwidth=0,width=60)
+StatusTree4.heading("Cu", text="CU",)
+StatusTree4.column("KBList", minwidth=0,width=60)
+StatusTree4.heading("KBList", text="KBLIST",)
+
 detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
 detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2)
 
@@ -629,6 +730,8 @@ serverNbTab3=Frame(serverNb)
 serverNbTab4=Frame(serverNb)
 serverNbTab5=Frame(serverNb)
 serverNbTab6=Frame(serverNb)
+serverNbTab7=Frame(serverNb)
+serverNbTab8=Frame(serverNb)
 
 ##Special Settings Tab
 #Instance
@@ -830,6 +933,13 @@ serverNbTab6Tree8['displaycolumns'] = ('retry_sec')
 serverNbTab6Tree8.heading("retry_sec", text="Retry Sec")
 serverNbTab6Tree8.column("retry_sec", minwidth=0,width=145,anchor="center")
 
+serverNbTab7Tree1=ttk.Treeview(serverNbTab7,show='headings',height=1, )
+serverNbTab7Tree1.grid(row=0,column=0,padx=5, pady=5, )
+serverNbTab7Tree1['columns'] = ('DBAdmin')
+serverNbTab7Tree1['displaycolumns'] = ('retry_sec')
+serverNbTab7Tree1.heading("retry_sec", text="Retry Sec")
+serverNbTab7Tree1.column("retry_sec", minwidth=0,width=145,anchor="center")
+
 
 #Adding all Tabs to the Notebook
 serverNb.add(serverNbTab1, text='Services',)
@@ -838,6 +948,8 @@ serverNb.add(serverNbTab3, text='Page File',)
 serverNb.add(serverNbTab4, text='Default Paths',)
 serverNb.add(serverNbTab6, text='DBMail',)
 serverNb.add(serverNbTab5, text='Alerts',)
+serverNb.add(serverNbTab7, text='DBA Utils',)
+serverNb.add(serverNbTab8, text='Databases',)
 
 inventoryframe['borderwidth'] = 2
 inventoryframe['relief'] = 'groove'
