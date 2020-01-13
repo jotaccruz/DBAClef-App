@@ -41,8 +41,8 @@ window=Tk()
 #---
 def getRbselected(mode):
     if (mode == 0):
-        view_command()
-    else:
+        #view_command()
+    #else:
         cleanall(InventoryTree)
         cleanall(StatusTree1)
         cleanall(StatusTree2)
@@ -112,6 +112,10 @@ def hello():
     #bottom = Label(m2, text="bottom pane")
     #m2.add(bottom)
 
+
+def set_inventory():
+    tkinter.messagebox.askquestion(title="dbaClef", message="Telus International - dbaClef v 1.0",)
+
 #---
 def basic_analyze_command():
     return
@@ -132,7 +136,10 @@ def view_command():
     #        "as DOMAIN FROM lgm_servers WHERE"+ \
     #        " srv_location = 'GCP' and srv_active=1 and srv_name in"+\
     #        " ('SUSWEYAK03','SUSWEYAK05');"
-    for row in dbservers(query):
+    mysqlserver=ip.get()
+    mysqlusername=user.get()
+    mysqlpsw=pas.get()
+    for row in dbservers(query,mysqlserver,mysqlusername,mysqlpsw):
         InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6]),tags = ('color'))
     InventoryTree.tag_configure('color', background='#aba9f8')
 
@@ -811,7 +818,7 @@ filemenu.add_command(label="4 DBMail", command=hello)
 filemenu.add_command(label="5 Alerts", command=hello)
 filemenu.add_command(label="6 sp_whoisactive", command=hello)
 filemenu.add_command(label="7 ServerName", command=hello)
-filemenu.add_command(label="8 DatabaseOwner", command=hello)
+filemenu.add_command(label="8 Invetory", command=set_inventory)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=window.destroy)
 menubar.add_cascade(label="Setup", menu=filemenu)
@@ -837,6 +844,12 @@ window.wm_title("dbaClef")
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
 inventoryframe.grid(row=0,column=0,padx=5, pady=5)
 
+inventory2frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
+inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
+
+inventory3frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
+inventory3frame.grid(row=0,column=1,padx=5, pady=5, sticky='n')
+
 statusframe = ttk.LabelFrame(window, width=525, height=192,text="Status")
 statusframe.grid(row=0,column=1,padx=5, pady=5)
 
@@ -844,21 +857,47 @@ statusframe.grid(row=0,column=1,padx=5, pady=5)
 ConnMode = IntVar()
 ConnMode.set(1)
 
-Radiobutton(inventoryframe, text="Inventory", variable=ConnMode, value=0, command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=0,padx=5, pady=5, sticky="W")
-Radiobutton(inventoryframe, text="Local", variable=ConnMode, value=1,command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=1,padx=5, pady=5, sticky="W")
+Radiobutton(inventory2frame, text="Inventory", variable=ConnMode, value=0, command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=0,padx=5, pady=5, sticky="W",columnspan=2)
+Radiobutton(inventory3frame, text="Local", variable=ConnMode, value=1,command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=0,padx=5, pady=5, sticky="W")
 
 #Texts
-server_text=StringVar()
-e1=ttk.Entry(inventoryframe,textvariable=server_text,width=20)
-e1.grid(row=1,column=0,padx=5, pady=5,sticky="w")
+labelip=ttk.Label(inventory2frame,text="Ip", wraplength=10)
+labelip.grid(row=1,column=0,padx=5, pady=5, sticky='w')
+ip_text=StringVar(value='172.25.20.17')
+ip=ttk.Entry(inventory2frame,textvariable=ip_text,width=20)
+ip.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
+labelport=ttk.Label(inventory2frame,text="Port", wraplength=50)
+labelport.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+port_text=StringVar(value='3306')
+port=ttk.Entry(inventory2frame,textvariable=port_text,width=20)
+port.grid(row=2,column=1,padx=5, pady=5,sticky="w")
+
+labeluser=ttk.Label(inventory2frame,text="User", wraplength=50)
+labeluser.grid(row=3,column=0,padx=5, pady=5, sticky='w')
+user_text=StringVar()
+user=ttk.Entry(inventory2frame,textvariable=user_text,width=20)
+user.grid(row=3,column=1,padx=5, pady=5,sticky="w")
+
+labelpass=ttk.Label(inventory2frame,text="Password", wraplength=50)
+labelpass.grid(row=4,column=0,padx=5, pady=5, sticky='w')
+pass_text=StringVar()
+pas=ttk.Entry(inventory2frame,textvariable=pass_text,width=20,show='*')
+pas.grid(row=4,column=1,padx=5, pady=5,sticky="w")
+
+
+labelinstance=ttk.Label(inventory3frame,text="Instance", wraplength=50)
+labelinstance.grid(row=1,column=0,padx=5, pady=5, sticky='w')
 instance=StringVar()
-e2=ttk.Entry(inventoryframe,textvariable=instance,width=20)
+e2=ttk.Entry(inventory3frame,textvariable=instance,width=20)
 e2.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
 #Bottoms
 DetailButton = ttk.Button(inventoryframe, text='Connect', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
-DetailButton.grid(row=1, column=2, sticky="e", padx=5, pady=5)
+DetailButton.grid(row=1, column=1, sticky="e", padx=5, pady=5,)
+
+InventoryButton = ttk.Button(inventory2frame, text='Load', underline = 0, command= lambda: view_command())
+InventoryButton.grid(row=0, column=1, sticky="e", padx=5, pady=5,)
 
 #ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
 #                      command=get_detail_command)
@@ -869,8 +908,8 @@ DetailButton.grid(row=1, column=2, sticky="e", padx=5, pady=5)
 #ExitButton.grid(row=3, column=2, sticky="s", padx=5, pady=5)
 
 #TreeViews
-InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
-InventoryTree.grid(row=3,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
+InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=3)
+InventoryTree.grid(row=6,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
 InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd','Os')
 InventoryTree['displaycolumns'] = ('Server', 'Instance', 'Ip', 'Port', 'Os')
 InventoryTree.column("Server", minwidth=0,width=85)
@@ -885,7 +924,6 @@ InventoryTree.column("Os", minwidth=0,width=80)
 InventoryTree.heading("Os", text="OS",)
 InventoryTree.heading("User", text="USER")
 InventoryTree.heading("Pwd", text="PWD")
-
 
 #if (selected_mode == 1):
 #    InventoryTree.state(('disabled',))
