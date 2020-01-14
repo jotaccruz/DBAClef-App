@@ -18,11 +18,11 @@ from dbaClefDrivers import *
 #from mysql.connector.constants import ClientFlag
 #from mysql.connector import errorcode
 
-def mysqlconnect():
-    mysqlserver = '172.25.20.17'
+def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
+    #mysqlserver = '172.25.20.17'
     mysqldatabase = 'db_legacy_maintenance'
-    mysqlusername = 'ISJCruz'
-    mysqlpsw = 'T3lu52018!'
+    #mysqlusername = 'ISJCruz'
+    #mysqlpsw = 'T3lu52018!'
     #mysqlinstancename = 'SUSWEYAK03'
     #sslpath="./ssl-certs/"
                             
@@ -113,8 +113,8 @@ def insert(title,author,year,isbn):
     conn.commit()
     conn.close()
 
-def dbservers(queryexec):
-    conn=mysqlconnect()
+def dbservers(queryexec,mysqlserver,mysqlusername,mysqlpsw):
+    conn=mysqlconnect(mysqlserver,mysqlusername,mysqlpsw)
     cur=conn.cursor()
     cur.execute(queryexec)
     rows=cur.fetchall()

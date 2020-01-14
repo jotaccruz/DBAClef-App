@@ -1,4 +1,5 @@
-#pyinstaller dbaClef.py --windowed --onefile
+#pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
+#pyinstaller --windowed --onefile --add-binary "dbaClef.png;files" --i DBAClef.ico dbaClef.py
 #conda install -c anaconda beautifulsoup4 
 
 """
@@ -41,8 +42,8 @@ window=Tk()
 #---
 def getRbselected(mode):
     if (mode == 0):
-        view_command()
-    else:
+        #view_command()
+    #else:
         cleanall(InventoryTree)
         cleanall(StatusTree1)
         cleanall(StatusTree2)
@@ -112,6 +113,10 @@ def hello():
     #bottom = Label(m2, text="bottom pane")
     #m2.add(bottom)
 
+
+def set_inventory():
+    tkinter.messagebox.askquestion(title="dbaClef", message="Telus International - dbaClef v 1.0",)
+
 #---
 def basic_analyze_command():
     return
@@ -132,7 +137,10 @@ def view_command():
     #        "as DOMAIN FROM lgm_servers WHERE"+ \
     #        " srv_location = 'GCP' and srv_active=1 and srv_name in"+\
     #        " ('SUSWEYAK03','SUSWEYAK05');"
-    for row in dbservers(query):
+    mysqlserver=ip.get()
+    mysqlusername=user.get()
+    mysqlpsw=pas.get()
+    for row in dbservers(query,mysqlserver,mysqlusername,mysqlpsw):
         InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6]),tags = ('color'))
     InventoryTree.tag_configure('color', background='#aba9f8')
 
@@ -178,7 +186,7 @@ def get_detail_command(mode):
         
 #CPUs
     sqlexec1="DECLARE @StringToExecute NVARCHAR(4000);\
-    CREATE TABLE #test (cpu_count int,physical_memory_GB int);\
+    CREATE TABLE #test (cpu_count int,physical_memory_GB int,sql_memory_GB numeric(5,2));\
     IF EXISTS ( SELECT  *\
 	FROM sys.all_objects o\
     INNER JOIN sys.all_columns c ON o.object_id = c.object_id\
@@ -188,8 +196,11 @@ def get_detail_command(mode):
     SET @StringToExecute = '\
     SELECT\
     cpu_count,\
-    CAST(ROUND((physical_memory_kb / 1024.0 / 1024), 1) AS INT) as physical_memory_GB\
-    FROM sys.dm_os_sys_info';\
+    CAST(ROUND((physical_memory_kb / 1024.0 / 1024), 1) AS INT) as physical_memory_GB,\
+	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(5,2)) as SQLMEM\
+    FROM sys.dm_os_sys_info\
+	CROSS APPLY sys.configurations\
+	WHERE [name] =''max server memory (MB)''';\
 	END\
     ELSE IF EXISTS ( SELECT  *\
     FROM    sys.all_objects o\
@@ -200,13 +211,16 @@ def get_detail_command(mode):
     SET @StringToExecute = '\
     SELECT\
     cpu_count,\
-    CAST(ROUND((physical_memory_in_bytes / 1024.0 / 1024.0 / 1024.0 ), 1) AS INT) as physical_memory_GB\
-    FROM sys.dm_os_sys_info';\
+    CAST(ROUND((physical_memory_in_bytes / 1024.0 / 1024.0 / 1024.0 ), 1) AS INT) as physical_memory_GB,\
+	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(5,2)) as SQLMEM\
+    FROM sys.dm_os_sys_info\
+	CROSS APPLY sys.configurations\
+	WHERE [name] =''max server memory (MB)''';\
     END\
     INSERT INTO #test\
     EXECUTE(@StringToExecute);"
 
-    sqlexec3="SELECT cpu_count ,physical_memory_GB FROM #test;"
+    sqlexec3="SELECT cpu_count ,physical_memory_GB,sql_memory_GB FROM #test;"
     
     for i in StatusTree2.get_children():
         StatusTree2.delete(i)
@@ -214,7 +228,7 @@ def get_detail_command(mode):
     for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
-        StatusTree2.insert("", END, values=(row[0],row[1]))
+        StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
 
 #Version
     sqlexec1="IF EXISTS (SELECT * FROM sys.dm_os_performance_counters)\
@@ -811,7 +825,7 @@ filemenu.add_command(label="4 DBMail", command=hello)
 filemenu.add_command(label="5 Alerts", command=hello)
 filemenu.add_command(label="6 sp_whoisactive", command=hello)
 filemenu.add_command(label="7 ServerName", command=hello)
-filemenu.add_command(label="8 DatabaseOwner", command=hello)
+filemenu.add_command(label="8 Invetory", command=set_inventory)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=window.destroy)
 menubar.add_cascade(label="Setup", menu=filemenu)
@@ -831,11 +845,26 @@ menubar.add_cascade(label="Help", menu=helpmenu)
 # display the menu
 window.config(menu=menubar)
 window.wm_title("dbaClef")
-#window.wm_iconbitmap(resource_path("dbaClef.ico"))
+
+if getattr(sys, 'frozen', False): # Running as compiled
+    running_dir = sys._MEIPASS + "/files/" # Same path name than pyinstaller option
+else:
+    running_dir = "./" # Path name when run with Python interpreter
+iconFileName = running_dir + "dbaClef.png"
+if os.path.isfile(iconFileName):
+    photo = PhotoImage(file = iconFileName)
+    #window.wm_iconbitmap(resource_path("dbaClef.ico"))
+    window.iconphoto(False,photo)
 
 #Frame Controls
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
 inventoryframe.grid(row=0,column=0,padx=5, pady=5)
+
+inventory2frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
+inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
+
+inventory3frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
+inventory3frame.grid(row=0,column=1,padx=5, pady=5, sticky='n')
 
 statusframe = ttk.LabelFrame(window, width=525, height=192,text="Status")
 statusframe.grid(row=0,column=1,padx=5, pady=5)
@@ -844,21 +873,47 @@ statusframe.grid(row=0,column=1,padx=5, pady=5)
 ConnMode = IntVar()
 ConnMode.set(1)
 
-Radiobutton(inventoryframe, text="Inventory", variable=ConnMode, value=0, command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=0,padx=5, pady=5, sticky="W")
-Radiobutton(inventoryframe, text="Local", variable=ConnMode, value=1,command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=1,padx=5, pady=5, sticky="W")
+Radiobutton(inventory2frame, text="Inventory", variable=ConnMode, value=0, command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=0,padx=5, pady=5, sticky="W",columnspan=2)
+Radiobutton(inventory3frame, text="Local", variable=ConnMode, value=1,command= lambda : getRbselected(ConnMode.get())).grid(row=0,column=0,padx=5, pady=5, sticky="W")
 
 #Texts
-server_text=StringVar()
-e1=ttk.Entry(inventoryframe,textvariable=server_text,width=20)
-e1.grid(row=1,column=0,padx=5, pady=5,sticky="w")
+labelip=ttk.Label(inventory2frame,text="Ip", wraplength=10)
+labelip.grid(row=1,column=0,padx=5, pady=5, sticky='w')
+ip_text=StringVar(value='172.25.20.17')
+ip=ttk.Entry(inventory2frame,textvariable=ip_text,width=20)
+ip.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
+labelport=ttk.Label(inventory2frame,text="Port", wraplength=50)
+labelport.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+port_text=StringVar(value='3306')
+port=ttk.Entry(inventory2frame,textvariable=port_text,width=20)
+port.grid(row=2,column=1,padx=5, pady=5,sticky="w")
+
+labeluser=ttk.Label(inventory2frame,text="User", wraplength=50)
+labeluser.grid(row=3,column=0,padx=5, pady=5, sticky='w')
+user_text=StringVar()
+user=ttk.Entry(inventory2frame,textvariable=user_text,width=20)
+user.grid(row=3,column=1,padx=5, pady=5,sticky="w")
+
+labelpass=ttk.Label(inventory2frame,text="Password", wraplength=50)
+labelpass.grid(row=4,column=0,padx=5, pady=5, sticky='w')
+pass_text=StringVar()
+pas=ttk.Entry(inventory2frame,textvariable=pass_text,width=20,show='*')
+pas.grid(row=4,column=1,padx=5, pady=5,sticky="w")
+
+
+labelinstance=ttk.Label(inventory3frame,text="Instance", wraplength=50)
+labelinstance.grid(row=1,column=0,padx=5, pady=5, sticky='w')
 instance=StringVar()
-e2=ttk.Entry(inventoryframe,textvariable=instance,width=20)
+e2=ttk.Entry(inventory3frame,textvariable=instance,width=20)
 e2.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
 #Bottoms
 DetailButton = ttk.Button(inventoryframe, text='Connect', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
-DetailButton.grid(row=1, column=2, sticky="e", padx=5, pady=5)
+DetailButton.grid(row=1, column=1, sticky="e", padx=5, pady=5,)
+
+InventoryButton = ttk.Button(inventory2frame, text='Load', underline = 0, command= lambda: view_command())
+InventoryButton.grid(row=0, column=1, sticky="e", padx=5, pady=5,)
 
 #ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
 #                      command=get_detail_command)
@@ -869,8 +924,8 @@ DetailButton.grid(row=1, column=2, sticky="e", padx=5, pady=5)
 #ExitButton.grid(row=3, column=2, sticky="s", padx=5, pady=5)
 
 #TreeViews
-InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
-InventoryTree.grid(row=3,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
+InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=3)
+InventoryTree.grid(row=6,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
 InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd','Os')
 InventoryTree['displaycolumns'] = ('Server', 'Instance', 'Ip', 'Port', 'Os')
 InventoryTree.column("Server", minwidth=0,width=85)
@@ -885,7 +940,6 @@ InventoryTree.column("Os", minwidth=0,width=80)
 InventoryTree.heading("Os", text="OS",)
 InventoryTree.heading("User", text="USER")
 InventoryTree.heading("Pwd", text="PWD")
-
 
 #if (selected_mode == 1):
 #    InventoryTree.state(('disabled',))
@@ -914,12 +968,14 @@ StatusTree1.heading("days_uptime", text="DAYS UPTIME",)
 
 StatusTree2=ttk.Treeview(statusframe,show='headings',height=1)
 StatusTree2.grid(row=0,column=2,padx=5, pady=5,rowspan=2,columnspan=1,sticky="w")
-StatusTree2['columns'] = ('cpu_count', 'physical_memory_GB')
-StatusTree2['displaycolumns'] = ('cpu_count', 'physical_memory_GB')
+StatusTree2['columns'] = ('cpu_count', 'physical_memory_GB','sql_memory_GB')
+StatusTree2['displaycolumns'] = ('cpu_count', 'physical_memory_GB','sql_memory_GB')
 StatusTree2.column("cpu_count", minwidth=0,width=40)
 StatusTree2.heading("cpu_count", text="CPUs",)
-StatusTree2.column("physical_memory_GB", minwidth=0,width=125)
+StatusTree2.column("physical_memory_GB", minwidth=0,width=100)
 StatusTree2.heading("physical_memory_GB", text="P MEMORY GB",)
+StatusTree2.column("sql_memory_GB", minwidth=0,width=100)
+StatusTree2.heading("sql_memory_GB", text="SQL MEMORY GB",)
 
 StatusTree3=ttk.Treeview(statusframe,show='headings',height=1)
 StatusTree3.grid(row=4,column=0,padx=5, pady=5,rowspan=2,columnspan=5,sticky="w")
@@ -927,7 +983,7 @@ StatusTree3['columns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustere
 StatusTree3['displaycolumns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustered', 'AlwaysOnEnabled', 'Warning')
 StatusTree3.column("ProductVersion", minwidth=0,width=75)
 StatusTree3.heading("ProductVersion", text="VERSION",)
-StatusTree3.column("PatchLevel", minwidth=0,width=60)
+StatusTree3.column("PatchLevel", minwidth=0,width=55)
 StatusTree3.heading("PatchLevel", text="PATCH",)
 StatusTree3.column("Edition", minwidth=0,width=150)
 StatusTree3.heading("Edition", text="EDITION",)
