@@ -1,4 +1,5 @@
 #pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
+#pyinstaller --windowed --onefile --add-binary "dbaClef.png;files" --i DBAClef.ico dbaClef.py
 #conda install -c anaconda beautifulsoup4 
 
 """
@@ -844,8 +845,16 @@ menubar.add_cascade(label="Help", menu=helpmenu)
 # display the menu
 window.config(menu=menubar)
 window.wm_title("dbaClef")
-#window.wm_iconbitmap(resource_path("dbaClef.ico"))
-window.wm_iconbitmap(r"dbaClef.ico")
+
+if getattr(sys, 'frozen', False): # Running as compiled
+    running_dir = sys._MEIPASS + "/files/" # Same path name than pyinstaller option
+else:
+    running_dir = "./" # Path name when run with Python interpreter
+iconFileName = running_dir + "dbaClef.png"
+if os.path.isfile(iconFileName):
+    photo = PhotoImage(file = iconFileName)
+    #window.wm_iconbitmap(resource_path("dbaClef.ico"))
+    window.iconphoto(False,photo)
 
 #Frame Controls
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
