@@ -1,4 +1,4 @@
-#pyinstaller dbaClef.py --windowed --onefile
+#pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
 #conda install -c anaconda beautifulsoup4 
 
 """
@@ -185,7 +185,7 @@ def get_detail_command(mode):
         
 #CPUs
     sqlexec1="DECLARE @StringToExecute NVARCHAR(4000);\
-    CREATE TABLE #test (cpu_count int,physical_memory_GB int);\
+    CREATE TABLE #test (cpu_count int,physical_memory_GB int,sql_memory_GB numeric(5,2));\
     IF EXISTS ( SELECT  *\
 	FROM sys.all_objects o\
     INNER JOIN sys.all_columns c ON o.object_id = c.object_id\
@@ -195,8 +195,11 @@ def get_detail_command(mode):
     SET @StringToExecute = '\
     SELECT\
     cpu_count,\
-    CAST(ROUND((physical_memory_kb / 1024.0 / 1024), 1) AS INT) as physical_memory_GB\
-    FROM sys.dm_os_sys_info';\
+    CAST(ROUND((physical_memory_kb / 1024.0 / 1024), 1) AS INT) as physical_memory_GB,\
+	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(5,2)) as SQLMEM\
+    FROM sys.dm_os_sys_info\
+	CROSS APPLY sys.configurations\
+	WHERE [name] =''max server memory (MB)''';\
 	END\
     ELSE IF EXISTS ( SELECT  *\
     FROM    sys.all_objects o\
@@ -207,13 +210,16 @@ def get_detail_command(mode):
     SET @StringToExecute = '\
     SELECT\
     cpu_count,\
-    CAST(ROUND((physical_memory_in_bytes / 1024.0 / 1024.0 / 1024.0 ), 1) AS INT) as physical_memory_GB\
-    FROM sys.dm_os_sys_info';\
+    CAST(ROUND((physical_memory_in_bytes / 1024.0 / 1024.0 / 1024.0 ), 1) AS INT) as physical_memory_GB,\
+	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(5,2)) as SQLMEM\
+    FROM sys.dm_os_sys_info\
+	CROSS APPLY sys.configurations\
+	WHERE [name] =''max server memory (MB)''';\
     END\
     INSERT INTO #test\
     EXECUTE(@StringToExecute);"
 
-    sqlexec3="SELECT cpu_count ,physical_memory_GB FROM #test;"
+    sqlexec3="SELECT cpu_count ,physical_memory_GB,sql_memory_GB FROM #test;"
     
     for i in StatusTree2.get_children():
         StatusTree2.delete(i)
@@ -221,7 +227,7 @@ def get_detail_command(mode):
     for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
-        StatusTree2.insert("", END, values=(row[0],row[1]))
+        StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
 
 #Version
     sqlexec1="IF EXISTS (SELECT * FROM sys.dm_os_performance_counters)\
@@ -839,6 +845,7 @@ menubar.add_cascade(label="Help", menu=helpmenu)
 window.config(menu=menubar)
 window.wm_title("dbaClef")
 #window.wm_iconbitmap(resource_path("dbaClef.ico"))
+window.wm_iconbitmap(r"dbaClef.ico")
 
 #Frame Controls
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
@@ -952,12 +959,14 @@ StatusTree1.heading("days_uptime", text="DAYS UPTIME",)
 
 StatusTree2=ttk.Treeview(statusframe,show='headings',height=1)
 StatusTree2.grid(row=0,column=2,padx=5, pady=5,rowspan=2,columnspan=1,sticky="w")
-StatusTree2['columns'] = ('cpu_count', 'physical_memory_GB')
-StatusTree2['displaycolumns'] = ('cpu_count', 'physical_memory_GB')
+StatusTree2['columns'] = ('cpu_count', 'physical_memory_GB','sql_memory_GB')
+StatusTree2['displaycolumns'] = ('cpu_count', 'physical_memory_GB','sql_memory_GB')
 StatusTree2.column("cpu_count", minwidth=0,width=40)
 StatusTree2.heading("cpu_count", text="CPUs",)
-StatusTree2.column("physical_memory_GB", minwidth=0,width=125)
+StatusTree2.column("physical_memory_GB", minwidth=0,width=100)
 StatusTree2.heading("physical_memory_GB", text="P MEMORY GB",)
+StatusTree2.column("sql_memory_GB", minwidth=0,width=100)
+StatusTree2.heading("sql_memory_GB", text="SQL MEMORY GB",)
 
 StatusTree3=ttk.Treeview(statusframe,show='headings',height=1)
 StatusTree3.grid(row=4,column=0,padx=5, pady=5,rowspan=2,columnspan=5,sticky="w")
@@ -965,7 +974,7 @@ StatusTree3['columns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustere
 StatusTree3['displaycolumns'] = ('ProductVersion', 'PatchLevel', 'Edition', 'IsClustered', 'AlwaysOnEnabled', 'Warning')
 StatusTree3.column("ProductVersion", minwidth=0,width=75)
 StatusTree3.heading("ProductVersion", text="VERSION",)
-StatusTree3.column("PatchLevel", minwidth=0,width=60)
+StatusTree3.column("PatchLevel", minwidth=0,width=55)
 StatusTree3.heading("PatchLevel", text="PATCH",)
 StatusTree3.column("Edition", minwidth=0,width=150)
 StatusTree3.heading("Edition", text="EDITION",)
