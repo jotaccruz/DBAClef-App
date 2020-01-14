@@ -5,4 +5,4 @@ This App help you to control, from the beginning, How is going the Standards int
 * DBAClefDrivers.py - Functions to dynamically use drivers for MSSQL connection strings.
 * DBAClefOS.py - Functions to interact with the OS.
 * DBAClefSource.py - Functions to interact with the DB.
-* DBAClefSource.py - Functions to interact with the WWW.
+* DBAClefSource.py - Functions to interact with the web.
