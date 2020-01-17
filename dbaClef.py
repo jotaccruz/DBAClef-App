@@ -1,5 +1,6 @@
-#pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
+#https://www.colorhexa.com/
 #pyinstaller --windowed --onefile --add-binary "dbaClef.png;files" --i DBAClef.ico dbaClef.py
+#pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
 #conda install -c anaconda beautifulsoup4 
 
 """
@@ -42,6 +43,7 @@ window=Tk()
 #---
 def getRbselected(mode):
     if (mode == 0):
+        InventoryButton.config(state=NORMAL)
         #view_command()
     #else:
         cleanall(InventoryTree)
@@ -73,7 +75,10 @@ def getRbselected(mode):
         cleanall(serverNbTab9Tree2)
         cleanall(serverNbTab9Tree3)
         cleanall(serverNbTab10Tree1)
-
+        cleanall(serverNbTab12Tree1)
+        cleanall(serverNbTab12Tree2)
+    else:
+        InventoryButton.config(state=DISABLED)
 #---
 def cleanall(widget):
     for i in widget.get_children():
@@ -127,7 +132,7 @@ def view_command():
         InventoryTree.delete(i)
     
     query="SELECT srv_name as SERVER, 'GLOBALSOLARWINDS' as INSTANCE, srv_ip as IP,"+\
-            "'1433' as PORT, srv_user as USER, SRV_PWD as PWD, srv_os as OS"+\
+            "'1433' as PORT, '' as USER, '' as PWD, srv_os as OS"+\
             " FROM lgm_servers WHERE"+\
             " srv_name in"+\
             " ('SCAEDYAK02','SUSWEYAK05');"
@@ -140,23 +145,192 @@ def view_command():
     mysqlserver=ip.get()
     mysqlusername=user.get()
     mysqlpsw=pas.get()
+    
+    #try:
     for row in dbservers(query,mysqlserver,mysqlusername,mysqlpsw):
         InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6]),tags = ('color'))
     InventoryTree.tag_configure('color', background='#aba9f8')
+    #except:
+        #tkinter.messagebox.showerror("dbaClef", "Error connecting to the Inventory Database")
 
 #---
 def get_selected_command(event):
     return
 
-#---
-def get_detail_command(mode):
 
+#Install buttons
+def get_dbadmin_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
                 "Instance": e2.get(),
-                "User": "test",
-                "Pwd": ""
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+        except IndexError:
+            pass
+        
+    sqlexec="CREATE DATABASE DBAdmin;"
+    sqlexec1="use DBAdmin; exec sp_changedbowner 'sa';"
+    try:
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1)
+        DBAdminButton.config(state=DISABLED)
+        success_handler("DBAdmin","Database was created")
+    except:
+        DBAdminButton.config(state=NORMAL)
+        error_handler("Error","DBAdmin")
+
+
+def get_servicerestart_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Instance": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+        except IndexError:
+            pass
+        
+    sqlexec="use msdb;\
+    IF EXISTS (\
+    SELECT *\
+    FROM INFORMATION_SCHEMA.ROUTINES\
+    WHERE SPECIFIC_SCHEMA = N'dbo'\
+    AND SPECIFIC_NAME = N'get_servicenotification'\
+    )\
+    DROP PROCEDURE dbo.get_servicenotification;"
+    sqlexec0="CREATE PROCEDURE dbo.get_servicenotification\
+	@p1 int = 0,\
+	@p2 int = 0\
+    AS\
+    BEGIN TRANSACTION\
+    DECLARE @ReturnCode INT\
+    SELECT @ReturnCode = 0\
+    IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'Database Maintenance' AND category_class=1)\
+    BEGIN\
+    EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'Database Maintenance'\
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback\
+    END\
+    DECLARE @jobId BINARY(16)\
+    EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'Service Restart Notification', \
+    @enabled=1,\
+    @notify_level_eventlog=0,\
+    @notify_level_email=0,\
+    @notify_level_netsend=0,\
+    @notify_level_page=0,\
+    @delete_level=0,\
+    @description=N'Notify key user of service restart',\
+    @category_name=N'Database Maintenance',\
+    @owner_login_name=N'sa', @job_id = @jobId OUTPUT\
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback\
+    EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Send_Email_Step',\
+    @step_id=1,\
+    @cmdexec_success_code=0,\
+    @on_success_action=1,\
+    @on_success_step_id=0,\
+    @on_fail_action=2,\
+    @on_fail_step_id=0,\
+    @retry_attempts=0,\
+    @retry_interval=0,\
+    @os_run_priority=0, @subsystem=N'TSQL',\
+    @command=N'EXEC msdb.dbo.sp_send_dbmail\
+    @profile_name = ''dba_profile'',\
+    @recipients = ''dba.tica@telusinternational.com'',\
+    @body = ''SQL Services on SCAEDYAK02 posibly restarted. Please check any dependent application services after verifying status'',\
+    @subject = ''SQL Services SCAEDYAK02 Restarted'' ;',\
+    @database_name=N'master',\
+    @flags=0\
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback\
+    EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1\
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback\
+    EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'Service_Restart_Notification',\
+    @enabled=1,\
+    @freq_type=64,\
+    @freq_interval=0,\
+    @freq_subday_type=0,\
+    @freq_subday_interval=0,\
+    @freq_relative_interval=0,\
+    @freq_recurrence_factor=0,\
+    @active_start_date=20170323,\
+    @active_end_date=99991231,\
+    @active_start_time=0,\
+    @active_end_time=235959,\
+    @schedule_uid=N'dbeaaf6d-e9df-4af8-969f-1680ca00c8db'\
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback\
+    EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N'(local)'\
+    IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback\
+    COMMIT TRANSACTION\
+    GOTO EndSave\
+    QuitWithRollback:\
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION\
+    EndSave:\
+    SELECT 'Success' AS RESULT"
+    
+    try:
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"msdb",
+                               selected_row['User'],selected_row['Pwd'],sqlexec)
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"msdb",
+                               selected_row['User'],selected_row['Pwd'],sqlexec0)
+    
+        sqlexec1="EXECUTE dbo.get_servicenotification 1, 2;"
+    
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"msdb",
+                               selected_row['User'],selected_row['Pwd'],sqlexec1)
+        ServiceButton.config(state=DISABLED)
+        success_handler("Service Restart","Job was created")
+    except:
+        ServiceButton.config(state=NORMAL)
+        error_handler("Error","Service Restart")        
+
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+
+#-------------------
+
+def get_spwhoisactive_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Instance": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+        except IndexError:
+            pass
+        
+    sqlexec="CREATE DATABASE DBAdmin;"
+    sqlexec1="use DBAdmin; exec sp_changedbowner 'sa';"
+    try:
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1)
+        spButton.config(state=DISABLED)
+        success_handler("DBAdmin","Database was created")
+    except:
+        spButton.config(state=NORMAL)
+        error_handler("Error","DBAdmin")        
+#---
+def get_detail_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Instance": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
                 }
         wmiuser=''
         wmipass=''
@@ -186,7 +360,7 @@ def get_detail_command(mode):
         
 #CPUs
     sqlexec1="DECLARE @StringToExecute NVARCHAR(4000);\
-    CREATE TABLE #test (cpu_count int,physical_memory_GB int,sql_memory_GB numeric(5,2));\
+    CREATE TABLE #test (cpu_count int,physical_memory_GB int,sql_memory_GB numeric(10,2));\
     IF EXISTS ( SELECT  *\
 	FROM sys.all_objects o\
     INNER JOIN sys.all_columns c ON o.object_id = c.object_id\
@@ -197,7 +371,7 @@ def get_detail_command(mode):
     SELECT\
     cpu_count,\
     CAST(ROUND((physical_memory_kb / 1024.0 / 1024), 1) AS INT) as physical_memory_GB,\
-	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(5,2)) as SQLMEM\
+	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(10,2)) as SQLMEM\
     FROM sys.dm_os_sys_info\
 	CROSS APPLY sys.configurations\
 	WHERE [name] =''max server memory (MB)''';\
@@ -212,7 +386,7 @@ def get_detail_command(mode):
     SELECT\
     cpu_count,\
     CAST(ROUND((physical_memory_in_bytes / 1024.0 / 1024.0 / 1024.0 ), 1) AS INT) as physical_memory_GB,\
-	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(5,2)) as SQLMEM\
+	CAST((CONVERT(int,value_in_use)/1024.0) as numeric(10,2)) as SQLMEM\
     FROM sys.dm_os_sys_info\
 	CROSS APPLY sys.configurations\
 	WHERE [name] =''max server memory (MB)''';\
@@ -269,44 +443,49 @@ def get_detail_command(mode):
     for i in StatusTree4.get_children():
         StatusTree4.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1):
-        version = mssqlversioncomplete(row[0])
-        #version = mssqlversioncomplete("12.0.6259")
-        #print (version)
-    for dic in version:
-        list=[]
-        if 'Version' in dic:
-            list.append(dic['Version'])
-            
-        if 'SupportedUntil' in dic:
-            list.append(dic['SupportedUntil'])
-        else:
-            list.append('')
-            
-        if 'Name' in dic:
-            list.append(dic['Name'])
-        else:
-            list.append('')
-            
-        if 'SP' in dic:
-            list.append(dic['SP'])
-        else:
-            list.append('')
-            
-        if 'CU' in dic:
-            list.append(dic['CU'])
-        else:
-            list.append('')
-            
-        if 'KBList' in dic:
-            list.append(dic['KBList'])
-        else:
-            list.append('')
-            
-        StatusTree4.insert("",END,values=(list),tags = ('need'))
-        StatusTree4.tag_configure('need', background='#f86d7e')
-
+    try:
+        for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+                               selected_row['User'],selected_row['Pwd'],sqlexec1):
+            version = mssqlversioncomplete(row[0])
+            #version = mssqlversioncomplete("12.0.6259")
+            #print (version)
+        for dic in version:
+            list=[]
+            if 'Version' in dic:
+                list.append(dic['Version'])
+                
+            if 'SupportedUntil' in dic:
+                list.append(dic['SupportedUntil'])
+            else:
+                list.append('')
+                
+            if 'Name' in dic:
+                list.append(dic['Name'])
+            else:
+                list.append('')
+                
+            if 'SP' in dic:
+                list.append(dic['SP'])
+            else:
+                list.append('')
+                
+            if 'CU' in dic:
+                list.append(dic['CU'])
+            else:
+                list.append('')
+                
+            if 'KBList' in dic:
+                list.append(dic['KBList'])
+            else:
+                list.append('')
+                
+            StatusTree4.insert("",END,values=(list),tags = ('need'))
+    except:
+        StatusTree4.insert("", END, values=('',),tags = ('need',))
+        pass
+    
+    StatusTree4.tag_configure('need', background='#f86d7e')
+                              
 #Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -328,13 +507,17 @@ def get_detail_command(mode):
     for i in serverNbTab1Tree2.get_children():
         serverNbTab1Tree2.delete(i)
         
-    for row in mssqlinfo(mode, selected_row['Server'], wmiuser, wmipass):
-        if (row['State'] == "Stopped"):
-            serverNbTab1Tree2.insert("", END, values=(row['SystemName'],row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('need',))
-        else:
-            serverNbTab1Tree2.insert("", END, values=(row['SystemName'],row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('good',))
-
-    serverNbTab1Tree2.tag_configure('need', background='#f86d7e')    
+    try:
+        for row in mssqlinfo(mode, selected_row['Server'], wmiuser, wmipass):
+            if (row['State'] == "Stopped"):
+                serverNbTab1Tree2.insert("", END, values=(row['SystemName'],row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('need',))
+            else:
+                serverNbTab1Tree2.insert("", END, values=(row['SystemName'],row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('good',))
+    except:
+        serverNbTab1Tree2.insert("", END, values=("",'Missing','','','','','','',),tags = ('need',))
+        pass        
+    
+    serverNbTab1Tree2.tag_configure('need', background='#f86d7e')
     
 #Tab Disks---------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -342,32 +525,48 @@ def get_detail_command(mode):
     for i in serverNbTab2Tree1.get_children():
         serverNbTab2Tree1.delete(i)
         
-    for row in diskinfo(mode, selected_row['Server'], wmiuser, wmipass):
-        if (row['DriveType'] == 3):
-            if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
-                serverNbTab2Tree1.insert("", END, values=(row['SystemName'],\
-                                                          row['Name'],\
-                                                          row['DriveLetter'],\
-                                                          row['FileSystem'],\
-                                                          row['Label'],\
-                                                          row['Capacity'],\
-                                                          row['FreeSpace'],\
-                                                          row['BlockSize'],\
-                                                          "64"),\
-            tags = ('need',))
-            else:
-                serverNbTab2Tree1.insert("", END, values=(row['SystemName'],\
-                                                          row['Name'],\
-                                                          row['DriveLetter'],\
-                                                          row['FileSystem'],\
-                                                          row['Label'],\
-                                                          row['Capacity'],\
-                                                          row['FreeSpace'],\
-                                                          row['BlockSize'],\
-                                                          ""),\
-            tags = ('good',))
-
-    serverNbTab2Tree1.tag_configure('need', background='#f5e45e')
+    try:
+        for row in diskinfo(mode, selected_row['Server'], wmiuser, wmipass):
+            if (row['DriveType'] == 3):
+                if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
+                    serverNbTab2Tree1.insert("", END, values=(row['SystemName'],\
+                                                              row['Name'],\
+                                                              row['DriveLetter'],\
+                                                              row['FileSystem'],\
+                                                              row['Label'],\
+                                                              row['Capacity'],\
+                                                              row['FreeSpace'],\
+                                                              row['BlockSize'],\
+                                                              "64"),\
+                tags = ('need',))
+                else:
+                    serverNbTab2Tree1.insert("", END, values=(row['SystemName'],\
+                                                              row['Name'],\
+                                                              row['DriveLetter'],\
+                                                              row['FileSystem'],\
+                                                              row['Label'],\
+                                                              row['Capacity'],\
+                                                              row['FreeSpace'],\
+                                                              row['BlockSize'],\
+                                                              ""),\
+                tags = ('good',))
+        
+        serverNbTab2Tree1.tag_configure('need', background='#f5e45e')
+    
+    except:
+        serverNbTab2Tree1.insert("", END, values=('',\
+                                                  'Missing',\
+                                                  '',\
+                                                  '',\
+                                                  '',\
+                                                  '',\
+                                                  '',\
+                                                  '',\
+                                                  ''),\
+        tags = ('need',))
+        serverNbTab2Tree1.tag_configure('need', background='#f86d7e')
+        pass
+    
 
 #Tab Page File-----------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -375,17 +574,28 @@ def get_detail_command(mode):
     for i in serverNbTab3Tree1.get_children():
         serverNbTab3Tree1.delete(i)
         
-    for row in pageinfo(mode, selected_row['Server'], wmiuser, wmipass):
-        serverNbTab3Tree1.insert("", END, values=(row['SystemName'],\
-                                                      row['Automatic'],\
-                                                      row['Caption'],\
-                                                      row['Status'],\
-                                                      row['CurrentUsage'],\
-                                                      row['PeakUsage'],\
-                                                      row['InitialSize'],\
-                                                      row['MaximumSize']),\
-        tags = ('good',))
-
+    try:
+        for row in pageinfo(mode, selected_row['Server'], wmiuser, wmipass):
+            serverNbTab3Tree1.insert("", END, values=(row['SystemName'],\
+                                                          row['Automatic'],\
+                                                          row['Caption'],\
+                                                          row['Status'],\
+                                                          row['CurrentUsage'],\
+                                                          row['PeakUsage'],\
+                                                          row['InitialSize'],\
+                                                          row['MaximumSize']),\
+            tags = ('good',))
+    except:
+        serverNbTab3Tree1.insert("", END, values=('',
+                                                  '',
+                                                  'Missing',
+                                                  '',
+                                                  '',
+                                                  '',
+                                                  '',
+                                                  ''),
+        tags = ('need',))
+        pass
     serverNbTab3Tree1.tag_configure('need', background='#f86d7e')
 
 #Tab Default Paths-------------------------------------------------------------
@@ -487,14 +697,15 @@ def get_detail_command(mode):
     rows=0
     for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab5Tree1.insert("", END, values=(row[0],row[1],row[2],row[3]))
+        serverNbTab5Tree1.insert("", END, values=(row[0],row[1],row[2],row[3]),tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab5Tree1.insert("", END, values=("Missing","","","",),tags = ('need'))
     
     serverNbTab5Tree1.tag_configure('need', background='#f86d7e')
-    
+    #serverNbTab5Tree1.tag_configure('good', background='#aef38c')
+                   
 #Alerts
     sqlexec="SELECT id,name,severity,CASE WHEN enabled=0 THEN 'No' ELSE 'Yes'\
     END AS Enabled FROM msdb.dbo.sysalerts"
@@ -505,14 +716,15 @@ def get_detail_command(mode):
     rows=0
     for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]))
+        serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]),tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab5Tree3.insert("", END, values=("Missing","","",),tags = ('need'))
     
     serverNbTab5Tree3.tag_configure('need', background='#f86d7e')
-    
+    #serverNbTab5Tree3.tag_configure('good', background='#aef38c')
+                   
 #Failsafe Operator
     sqlexec1="CREATE TABLE #AlertInfo (FailSafeOperator NVARCHAR(255),\
     NotificationMethod INT,ForwardingServer NVARCHAR(255),ForwardingSeverity \
@@ -540,7 +752,8 @@ def get_detail_command(mode):
             serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('good'))
     
     serverNbTab5Tree2.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab5Tree2.tag_configure('good', background='#aef38c')
+               
 #DBMail Tab--------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -558,6 +771,7 @@ def get_detail_command(mode):
             serverNbTab6Tree1.insert("", END, values=(row[0]), tags = ('good'))
     
     serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
+    serverNbTab6Tree1.tag_configure('good', background='#aef38c')
                                     
 #SQL Server Agent status
     sqlexec="IF (SELECT CAST(SERVERPROPERTY('Edition') AS VARCHAR(30))) NOT LIKE 'Express Edition%' BEGIN SELECT CASE WHEN status_desc = 'Running' THEN 'Running' ELSE 'Stopped' END AS SQLAgentStarted FROM sys.dm_server_services WHERE servicename LIKE 'SQL Server Agent%' END ELSE BEGIN SELECT 'Express Edition' SQLAgentStarted END;"
@@ -573,7 +787,8 @@ def get_detail_command(mode):
             serverNbTab6Tree2.insert("", END, values=(row[0]), tags = ('need'))
     
     serverNbTab6Tree2.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree2.tag_configure('good', background='#aef38c')
+                                    
 #SQL Database Mail is enabled
     sqlexec="SELECT CASE WHEN CAST(value_in_use AS INT)=0 THEN 'Disabled' ELSE 'Enabled' END AS DBMailEnabled  FROM sys.configurations WHERE [name] ='Database Mail XPs';"
 
@@ -588,7 +803,8 @@ def get_detail_command(mode):
             serverNbTab6Tree3.insert("", END, values=(row[0]), tags = ('good'))
     
     serverNbTab6Tree3.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree3.tag_configure('good', background='#aef38c')
+               
 #@SQL Agent Mail Enabled     
     sqlexec="SELECT CASE WHEN COUNT(*) > 0 THEN 'Enabled' ELSE 'Disabled' END AS SQLAgentMailEnabled FROM msdb.dbo.sysmail_profile;"
 
@@ -603,7 +819,8 @@ def get_detail_command(mode):
             serverNbTab6Tree4.insert("", END, values=(row[0]), tags = ('good'))
     
     serverNbTab6Tree4.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree4.tag_configure('good', background='#aef38c')
+               
 #Mail Account Enabled
     sqlexec="SELECT CASE WHEN COUNT(*) > 0 THEN 'Enabled' ELSE 'Disabled' END AS MailAccountEnabled FROM msdb.dbo.sysmail_account;"
 
@@ -618,7 +835,8 @@ def get_detail_command(mode):
             serverNbTab6Tree5.insert("", END, values=(row[0]), tags = ('good'))
     
     serverNbTab6Tree5.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree5.tag_configure('good', background='#aef38c')
+               
 #SQL Server Agent is enabled to use Database Mail
     sqlexec1="CREATE TABLE #SQLAgentMailEnabled (SQLAgentMailEnabled nvarchar(15),Datos INT);"
     
@@ -638,7 +856,8 @@ def get_detail_command(mode):
             serverNbTab6Tree6.insert("", END, values=(row[0]), tags = ('need'))
     
     serverNbTab6Tree6.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree6.tag_configure('good', background='#aef38c')
+               
 #SQL Server Agent is enabled to use Database Mail and Mail Profile is assigned
     sqlexec1="CREATE TABLE #SQLAgentMailProfileEnabled (SQLAgentMailProfileEnabled nvarchar(20),dat sysname);"
     
@@ -658,7 +877,8 @@ def get_detail_command(mode):
             serverNbTab6Tree7.insert("", END, values=(row[0]), tags = ('need'))
     
     serverNbTab6Tree7.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree7.tag_configure('good', background='#aef38c')
+               
 #get email retry interval configuration value
     sqlexec="SELECT paramvalue as retry_sec FROM msdb.dbo.sysmail_configuration WHERE paramname = 'AccountRetryDelay';"
 
@@ -675,7 +895,8 @@ def get_detail_command(mode):
         serverNbTab6Tree8.insert("", END, values=("","Missing",),tags = ('need'))
     
     serverNbTab6Tree8.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab6Tree8.tag_configure('good', background='#aef38c')
+               
 #General Check
 #--PENDING CONFIGURATIONS.
     sqlexec="SELECT name NAME, description AS DESCR, CONVERT(nvarchar(100),value) AS VALUE, CONVERT(nvarchar(100),value_in_use) AS VALUEINUSE FROM sys.configurations where value <> value_in_use;"
@@ -725,22 +946,145 @@ def get_detail_command(mode):
             serverNbTab7Tree3.insert("", END, values=(rows[0], ),tags = ('good'))
    
     serverNbTab7Tree3.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab7Tree3.tag_configure('good', background='#aef38c')
+                                    
 #Databases
 #--DATABASES
-    sqlexec="SELECT database_id ID,name NAME,isnull(suser_sname(owner_sid),'~~UNKNOWN~~') OWNER,convert(nvarchar(11), create_date) CREATION,compatibility_level COMPATIBILITY,state_desc STATUS,recovery_model_desc RECOVERY,page_verify_option_desc VERIFICATION,log_reuse_wait_desc LRWAIT FROM master.sys.databases WHERE name NOT IN ('DBAdmin') ORDER BY create_date ASC;"
+    sqlexec="SELECT database_id ID,a.name NAME,ISNULL(CONVERT(VARCHAR(11),b.LastBackup),'Take Care') LASTBACKUP,isnull(suser_sname(owner_sid),'~~UNKNOWN~~') OWNER,convert(nvarchar(11), create_date) CREATION,compatibility_level COMPATIBILITY,state_desc STATUS,recovery_model_desc RECOVERY,page_verify_option_desc VERIFICATION,log_reuse_wait_desc LRWAIT FROM master.sys.databases a LEFT JOIN (SELECT DB.[name], BS.[type], MAX(BS.backup_finish_date) AS LastBackup FROM sys.databases AS DB LEFT JOIN msdb.dbo.backupset AS BS ON DB.[name] = BS.database_name WHERE BS.[type]='D' GROUP BY DB.[name], BS.[type]) b ON a.name=b.name WHERE a.name NOT IN ('DBAdmin') ORDER BY a.name ASC, create_date ASC;"
 
     for i in serverNbTab8Tree1.get_children():
         serverNbTab8Tree1.delete(i)
         
     for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[2]!='sa'):
-            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],),tags = ('need'))
+        if (row[3]!='sa' or row[2]=='Take Care'):
+            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
         else:
-            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],),tags = ('good'))
+            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('good'))
             
     serverNbTab8Tree1.tag_configure('need', background='#f86d7e')
+
+#Transaction Log
+#--Transaction Log Usage
+    sqlexec1="CREATE TABLE #dbcc_log (Dbname nvarchar(250),LogSizeMB int,LogSpaceUsed numeric(4,2),Stat int);"
+        
+    sqlexec2="INSERT INTO #dbcc_log EXEC ('DBCC SQLPERF(logspace)');"
+        
+    sqlexec3="SELECT * FROM #dbcc_log"
+
+    for i in serverNbTab12Tree1.get_children():
+        serverNbTab12Tree1.delete(i)
+        
+    for rows in mssqldetailsp(selected_row['Server'],selected_row['Instance'],"master",
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,
+                           sqlexec2,sqlexec3):
+        if (rows[2]>90):
+            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],rows[3], ),tags = ('need'))
+        else:
+            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],rows[3], ),tags = ('good'))
+   
+    serverNbTab12Tree1.tag_configure('need', background='#f86d7e')
+    #serverNbTab12Tree1.tag_configure('good', background='#aef38c')
+
+    sqlexec="USE master;\
+    IF EXISTS (\
+    SELECT *\
+    FROM INFORMATION_SCHEMA.ROUTINES\
+    WHERE SPECIFIC_SCHEMA = N'dbo'\
+    AND SPECIFIC_NAME = N'get_vlf'\
+    )\
+    DROP PROCEDURE dbo.get_vlf;"
+    sqlexec0="CREATE PROCEDURE dbo.get_vlf\
+	@p1 int = 0,\
+	@p2 int = 0\
+    AS\
+    BEGIN\
+    declare @query varchar(100)\
+    declare @dbname sysname\
+    declare @vlfs int\
+    declare @databases table (dbname sysname)\
+    insert into @databases\
+    select name from sys.databases where state = 0\
+    declare @MajorVersion tinyint\
+    set @MajorVersion = LEFT(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar(max)),CHARINDEX('.',CAST(SERVERPROPERTY('ProductVersion') AS nvarchar(max)))-1)\
+    if @MajorVersion < 11\
+    begin\
+    declare @dbccloginfo table\
+    (\
+    fileid smallint,\
+    file_size bigint,\
+    start_offset bigint,\
+    fseqno int,\
+    [status] tinyint,\
+    parity tinyint,\
+    create_lsn numeric(25,0)\
+    )\
+    while exists(select top 1 dbname from @databases)\
+    begin\
+    set @dbname = (select top 1 dbname from @databases)\
+    set @query = 'dbcc loginfo (' + '''' + @dbname + ''')'\
+    insert into @dbccloginfo\
+    exec (@query)\
+    set @vlfs = @@rowcount\
+    insert #vlfcounts\
+    values(@dbname, @vlfs)\
+    delete from @databases where dbname = @dbname\
+    end\
+    end\
+    else\
+    begin\
+    declare @dbccloginfo2012 table\
+    (\
+    RecoveryUnitId int,\
+    fileid smallint,\
+    file_size bigint,\
+    start_offset bigint,\
+    fseqno int,\
+    [status] tinyint,\
+    parity tinyint,\
+    create_lsn numeric(25,0)\
+    )\
+    while exists(select top 1 dbname from @databases)\
+    begin\
+    set @dbname = (select top 1 dbname from @databases)\
+    set @query = 'dbcc loginfo (' + '''' + @dbname + ''')'\
+    insert into @dbccloginfo2012\
+    exec (@query)\
+    set @vlfs = @@rowcount\
+    insert #vlfcounts\
+    values(@dbname, @vlfs)\
+    delete from @databases where dbname = @dbname\
+    end\
+    end\
+    select dbname, vlfcount\
+    from #vlfcounts\
+    order by dbname\
+    END;"
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0)
+
+    sqlexec1="CREATE TABLE #vlfcounts (dbname sysname,vlfcount int); EXECUTE master.dbo.get_vlf;"
+
+    sqlexec3="SELECT dbname, vlfcount FROM #vlfcounts ORDER BY dbname;"
+    
+    for i in serverNbTab12Tree2.get_children():
+        serverNbTab12Tree2.delete(i)
+        
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
+                           sqlexec3):
+        if (row[1]>200):
+            serverNbTab12Tree2.insert("", END, values=(row[0],row[1],),tag='need')
+        else:
+            serverNbTab12Tree2.insert("", END, values=(row[0],row[1],),tag='good')
+    
+    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+
+    serverNbTab12Tree2.tag_configure('need', background='#f86d7e')
+    #serverNbTab12Tree2.tag_configure('good', background='#aef38c')
 
 #Logins
 #--Sysadmin Logins
@@ -760,7 +1104,7 @@ def get_detail_command(mode):
 
 #DBA Tools
 #--DBAdmin
-    sqlexec="SELECT database_id ID,'DBAdmin' NAME,isnull(suser_sname(owner_sid),'~~UNKNOWN~~') OWNER,convert(nvarchar(11), create_date) CREATION,compatibility_level COMPATIBILITY,state_desc STATUS,recovery_model_desc RECOVERY,page_verify_option_desc VERIFICATION,log_reuse_wait_desc LRWAIT FROM master.sys.databases WHERE name IN ('DBAdmin');"
+    sqlexec="SELECT database_id ID,'DBAdmin' NAME,ISNULL(CONVERT(VARCHAR(11),b.LastBackup),'Take Care') LASTBACKUP,isnull(suser_sname(owner_sid),'~~UNKNOWN~~') OWNER,convert(nvarchar(11), create_date) CREATION,compatibility_level COMPATIBILITY,state_desc STATUS,recovery_model_desc RECOVERY,page_verify_option_desc VERIFICATION,log_reuse_wait_desc LRWAIT FROM master.sys.databases a LEFT JOIN (SELECT DB.[name], BS.[type], MAX(BS.backup_finish_date) AS LastBackup FROM sys.databases AS DB LEFT JOIN msdb.dbo.backupset AS BS ON DB.[name] = BS.database_name WHERE BS.[type]='D' GROUP BY DB.[name], BS.[type]) b ON a.name=b.name WHERE a.name = 'DBAdmin' ORDER BY a.name ASC, create_date ASC;"
 
     for i in serverNbTab9Tree1.get_children():
         serverNbTab9Tree1.delete(i)
@@ -768,17 +1112,19 @@ def get_detail_command(mode):
     rows=0
     for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[2]!='sa'):
-            serverNbTab9Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],),tags = ('need'))
+        if (row[3]!='sa' or row[2]=='Take Care' ):
+            serverNbTab9Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
         else:
-            serverNbTab9Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],),tags = ('good'))
+            serverNbTab9Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('good'))
         rows=1
 
     if rows==0:
         serverNbTab9Tree1.insert("", END, values=("","Missing","","","","","","","",),tags = ('need'))
+        DBAdminButton.config(state=NORMAL)
     
     serverNbTab9Tree1.tag_configure('need', background='#f86d7e')
-
+    #serverNbTab9Tree1.tag_configure('good', background='#aef38c')
+               
 #--Service Restart Notification
     sqlexec="SELECT jo.name NAME,isnull(suser_sname(jo.owner_sid),'~~UNKNOWN~~') OWNER,CASE WHEN jo.enabled=1 THEN 'ENABLE' ELSE 'DISABLE' END AS STATUS,description DESCR FROM msdb.dbo.sysjobs jo CROSS APPLY msdb.dbo.sysjobschedules josc CROSS APPLY msdb.dbo.sysschedules sc WHERE jo.job_id=josc.job_id AND josc.schedule_id=sc.schedule_id AND (jo.name LIKE 'Service Restart Notification' OR sc.freq_type=64);"
 
@@ -790,29 +1136,43 @@ def get_detail_command(mode):
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab9Tree2.insert("", END, values=(row[0],row[1],row[2],row[3],),tags = ('good'))
         rows=1
-    
+
     if rows==0:
         serverNbTab9Tree2.insert("", END, values=("Missing","","","",),tags = ('need'))
+        ServiceButton.config(state=NORMAL)
     
     serverNbTab9Tree2.tag_configure('need', background='#f86d7e')
-            
+    serverNbTab9Tree2.tag_configure('good', background='#aef38c')
+                                    
 #--sp_whoisactive
-    sqlexec="IF EXISTS (SELECT * FROM sys.databases o WHERE o.name = 'DBAdmin') BEGIN SELECT name,info FROM DBAdmin.dbo.sysobjects WHERE name LIKE 'sp_whoisactive' END ELSE BEGIN SELECT 'Missing' name,'' info END;"
+    sqlexec="IF EXISTS (SELECT * FROM sys.databases o WHERE o.name = 'DBAdmin') BEGIN SELECT name,info FROM DBAdmin.dbo.sysobjects WHERE name LIKE 'sp_whoisactive' END ELSE SELECT 'Missing' name ,'' info;"
 
     for i in serverNbTab9Tree3.get_children():
         serverNbTab9Tree3.delete(i)
     
+    rows=0
     for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]!='Missing'):
             serverNbTab9Tree3.insert("", END, values=(row[0],row[1],),tags = ('good'))
         else:
             serverNbTab9Tree3.insert("", END, values=(row[0],row[1],),tags = ('need'))
-
+            spButton.config(state=NORMAL)
+        rows=1
+        
+    if rows==0:
+        serverNbTab9Tree3.insert("", END, values=("Missing","",),tags = ('need'))
+        spButton.config(state=NORMAL)
+    
     serverNbTab9Tree3.tag_configure('need', background='#f86d7e')
-
+    serverNbTab9Tree3.tag_configure('good', background='#aef38c')
 
 ####### main ------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
     
 menubar = Menu(window)
 
@@ -858,13 +1218,13 @@ if os.path.isfile(iconFileName):
 
 #Frame Controls
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
-inventoryframe.grid(row=0,column=0,padx=5, pady=5)
+inventoryframe.grid(row=0,column=0,padx=5, pady=5, )
 
 inventory2frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
-inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
+inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=4,sticky='n',)
 
 inventory3frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
-inventory3frame.grid(row=0,column=1,padx=5, pady=5, sticky='n')
+inventory3frame.grid(row=0,column=1,padx=5, pady=5, sticky='n',columnspan=2)
 
 statusframe = ttk.LabelFrame(window, width=525, height=192,text="Status")
 statusframe.grid(row=0,column=1,padx=5, pady=5)
@@ -901,18 +1261,29 @@ pass_text=StringVar()
 pas=ttk.Entry(inventory2frame,textvariable=pass_text,width=20,show='*')
 pas.grid(row=4,column=1,padx=5, pady=5,sticky="w")
 
-
 labelinstance=ttk.Label(inventory3frame,text="Instance", wraplength=50)
 labelinstance.grid(row=1,column=0,padx=5, pady=5, sticky='w')
 instance=StringVar()
 e2=ttk.Entry(inventory3frame,textvariable=instance,width=20)
 e2.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
+labelSQLUser=ttk.Label(inventoryframe,text="SQL Login", wraplength=50)
+labelSQLUser.grid(row=2,column=1,padx=5, pady=5, sticky='w')
+SQLUser=StringVar()
+SQLUserEntry=ttk.Entry(inventoryframe,textvariable=SQLUser,width=20)
+SQLUserEntry.grid(row=2,column=2,padx=5, pady=5,sticky="w")
+
+labelSQLPass=ttk.Label(inventoryframe,text="Password", wraplength=50)
+labelSQLPass.grid(row=3,column=1,padx=5, pady=5, sticky='w')
+SQLPass=StringVar()
+SQLPassEntry=ttk.Entry(inventoryframe,textvariable=SQLPass,show='*',width=20)
+SQLPassEntry.grid(row=3,column=2,padx=5, pady=5,sticky="w")
+
 #Bottoms
 DetailButton = ttk.Button(inventoryframe, text='Connect', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
-DetailButton.grid(row=1, column=1, sticky="e", padx=5, pady=5,)
+DetailButton.grid(row=10, column=2, sticky="e", padx=5, pady=5,)
 
-InventoryButton = ttk.Button(inventory2frame, text='Load', underline = 0, command= lambda: view_command())
+InventoryButton = ttk.Button(inventory2frame, state=DISABLED, text='Load', underline = 0, command= lambda: view_command())
 InventoryButton.grid(row=0, column=1, sticky="e", padx=5, pady=5,)
 
 #ScanButton = Button(inventoryframe, text='Scan', underline = 0, \
@@ -925,7 +1296,7 @@ InventoryButton.grid(row=0, column=1, sticky="e", padx=5, pady=5,)
 
 #TreeViews
 InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=3)
-InventoryTree.grid(row=6,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
+InventoryTree.grid(row=4,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
 InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd','Os')
 InventoryTree['displaycolumns'] = ('Server', 'Instance', 'Ip', 'Port', 'Os')
 InventoryTree.column("Server", minwidth=0,width=85)
@@ -1027,6 +1398,8 @@ serverNbTab7=Frame(serverNb)
 serverNbTab8=Frame(serverNb)
 serverNbTab9=Frame(serverNb)
 serverNbTab10=Frame(serverNb)
+serverNbTab11=Frame(serverNb)
+serverNbTab12=Frame(serverNb)
 
 ##Special Settings Tab
 #Instance
@@ -1276,14 +1649,16 @@ serverNbTab7Tree1.column("ValueInUse", minwidth=0,width=145)
 #--Databases
 serverNbTab8Tree1=ttk.Treeview(serverNbTab8,show='headings',height=12, )
 serverNbTab8Tree1.grid(row=0,column=0,padx=5, pady=5, )
-serverNbTab8Tree1['columns'] = ('Id','Name','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
-serverNbTab8Tree1['displaycolumns'] = ('Id','Name','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab8Tree1['columns'] = ('Id','Name','LastBackup','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab8Tree1['displaycolumns'] = ('Id','Name','LastBackup','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
 serverNbTab8Tree1.heading("Id", text="ID")
-serverNbTab8Tree1.column("Id", minwidth=0,width=50,anchor="w")
+serverNbTab8Tree1.column("Id", minwidth=0,width=25,anchor="w")
 serverNbTab8Tree1.heading("Name", text="NAME")
 serverNbTab8Tree1.column("Name", minwidth=0,width=160,anchor="w")
+serverNbTab8Tree1.heading("LastBackup", text="LAST BKP")
+serverNbTab8Tree1.column("LastBackup", minwidth=0,width=100,anchor="w")
 serverNbTab8Tree1.heading("Owner", text="OWNER")
-serverNbTab8Tree1.column("Owner", minwidth=0,width=175,anchor="w")
+serverNbTab8Tree1.column("Owner", minwidth=0,width=50,anchor="w")
 serverNbTab8Tree1.heading("Creation", text="CREATION")
 serverNbTab8Tree1.column("Creation", minwidth=0,width=75,anchor="w")
 serverNbTab8Tree1.heading("Compat", text="COMPAT")
@@ -1296,6 +1671,31 @@ serverNbTab8Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab8Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab8Tree1.heading("LRWait", text="LRWAIT")
 serverNbTab8Tree1.column("LRWait", minwidth=0,width=115,anchor="w")
+
+#--#Transaction Log Tab
+#--Transaction Log Usage
+serverNbTab12Tree1=ttk.Treeview(serverNbTab12,show='headings',height=12, )
+serverNbTab12Tree1.grid(row=0,column=0,padx=5, pady=5, )
+serverNbTab12Tree1['columns'] = ('Database','LogSizeMB','LogSpaceUsed','Status',)
+serverNbTab12Tree1['displaycolumns'] = ('Database','LogSizeMB','LogSpaceUsed','Status')
+serverNbTab12Tree1.heading("Database", text="DATABASE")
+serverNbTab12Tree1.column("Database", minwidth=0,width=160,anchor="w")
+serverNbTab12Tree1.heading("LogSizeMB", text="LOG SIZE MB")
+serverNbTab12Tree1.column("LogSizeMB", minwidth=0,width=100,anchor="w")
+serverNbTab12Tree1.heading("LogSpaceUsed", text="LOG SPACE USED")
+serverNbTab12Tree1.column("LogSpaceUsed", minwidth=0,width=100,anchor="w")
+serverNbTab12Tree1.heading("Status", text="STATUS")
+serverNbTab12Tree1.column("Status", minwidth=0,width=75,anchor="w")
+
+#--VLF
+serverNbTab12Tree2=ttk.Treeview(serverNbTab12,show='headings',height=12, )
+serverNbTab12Tree2.grid(row=0,column=2,padx=5, pady=5, )
+serverNbTab12Tree2['columns'] = ('Database','Vlfs',)
+serverNbTab12Tree2['displaycolumns'] = ('Database','Vlfs',)
+serverNbTab12Tree2.heading("Database", text="DATABASE")
+serverNbTab12Tree2.column("Database", minwidth=0,width=160,anchor="w")
+serverNbTab12Tree2.heading("Vlfs", text="VLFs")
+serverNbTab12Tree2.column("Vlfs", minwidth=0,width=100,anchor="w")
 
 #--#Logins Sysadmin Tab
 #--Sysadmin members
@@ -1318,14 +1718,21 @@ serverNbTab10Tree1.column("Db", minwidth=0,width=145, )
 #--DBAdmin Database
 labelDBAdmin=ttk.Label(serverNbTab9,text="DBAdmin Database")
 labelDBAdmin.grid(row=0,column=0,padx=5, pady=5, sticky='w')
+
+DBAdminButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_dbadmin_command(ConnMode.get()))
+DBAdminButton.grid(row=0, column=1, sticky="w", padx=5, pady=5,)
+DBAdminButton.config(state=DISABLED)
+
 serverNbTab9Tree1=ttk.Treeview(serverNbTab9,show='headings',height=1, )
-serverNbTab9Tree1.grid(row=1,column=0,padx=5, pady=5,columnspan=2 )
-serverNbTab9Tree1['columns'] = ('Id','Name','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
-serverNbTab9Tree1['displaycolumns'] = ('Id','Name','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab9Tree1.grid(row=1,column=0,padx=5, pady=5,columnspan=4 )
+serverNbTab9Tree1['columns'] = ('Id','Name','LastBackup','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab9Tree1['displaycolumns'] = ('Id','Name','LastBackup','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
 serverNbTab9Tree1.heading("Id", text="ID")
 serverNbTab9Tree1.column("Id", minwidth=0,width=50,anchor="w")
 serverNbTab9Tree1.heading("Name", text="NAME")
-serverNbTab9Tree1.column("Name", minwidth=0,width=200,anchor="w")
+serverNbTab9Tree1.column("Name", minwidth=0,width=160,anchor="w")
+serverNbTab9Tree1.heading("LastBackup", text="LAST BKP")
+serverNbTab9Tree1.column("LastBackup", minwidth=0,width=100,anchor="w")
 serverNbTab9Tree1.heading("Owner", text="OWNER")
 serverNbTab9Tree1.column("Owner", minwidth=0,width=50,anchor="w")
 serverNbTab9Tree1.heading("Creation", text="CREATION")
@@ -1339,13 +1746,18 @@ serverNbTab9Tree1.column("Recovery", minwidth=0,width=70,anchor="w")
 serverNbTab9Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab9Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab9Tree1.heading("LRWait", text="LRWAIT")
-serverNbTab9Tree1.column("LRWait", minwidth=0,width=150,anchor="w")
+serverNbTab9Tree1.column("LRWait", minwidth=0,width=115,anchor="w")
 
 #--Service Restart Notification Job
-labelDBAdmin=ttk.Label(serverNbTab9,text="Service Restart Notification Job")
-labelDBAdmin.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+labelService=ttk.Label(serverNbTab9,text="Service Restart Notification Job")
+labelService.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+
+ServiceButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_servicerestart_command(ConnMode.get()))
+ServiceButton.grid(row=2, column=1, sticky="w", padx=5, pady=5,)
+ServiceButton.config(state=DISABLED)
+
 serverNbTab9Tree2=ttk.Treeview(serverNbTab9,show='headings',height=1, )
-serverNbTab9Tree2.grid(row=3,column=0,padx=5, pady=5, sticky='w',)
+serverNbTab9Tree2.grid(row=3,column=0,padx=5, pady=5, sticky='w',columnspan=2)
 serverNbTab9Tree2['columns'] = ('Name','Owner','Status','Desc',)
 serverNbTab9Tree2['displaycolumns'] = ('Name','Owner','Status','Desc',)
 serverNbTab9Tree2.heading("Name", text="NAME")
@@ -1358,10 +1770,15 @@ serverNbTab9Tree2.heading("Desc", text="DESC")
 serverNbTab9Tree2.column("Desc", minwidth=0,width=100,anchor="w")
 
 #--sp_whoisactive
-labelDBAdmin=ttk.Label(serverNbTab9,text="sp_whoisactive")
-labelDBAdmin.grid(row=2,column=1,padx=5, pady=5, sticky='w')
+labelsp=ttk.Label(serverNbTab9,text="sp_whoisactive")
+labelsp.grid(row=2,column=2,padx=5, pady=5, sticky='w')
+
+spButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_spwhoisactive_command(ConnMode.get()))
+spButton.grid(row=2, column=3, sticky="w", padx=5, pady=5,)
+spButton.config(state=DISABLED)
+
 serverNbTab9Tree3=ttk.Treeview(serverNbTab9,show='headings',height=1, )
-serverNbTab9Tree3.grid(row=3,column=1,padx=5, pady=5, sticky='w')
+serverNbTab9Tree3.grid(row=3,column=2,padx=5, pady=5, sticky='w',columnspan=2)
 serverNbTab9Tree3['columns'] = ('Name','Info',)
 serverNbTab9Tree3['displaycolumns'] = ('Name','Info',)
 serverNbTab9Tree3.heading("Name", text="NAME")
@@ -1381,9 +1798,11 @@ serverNb.add(serverNbTab4, text='Default Paths',)
 serverNb.add(serverNbTab6, text='DBMail',)
 serverNb.add(serverNbTab5, text='Alerts',)
 serverNb.add(serverNbTab8, text='Databases',)
+serverNb.add(serverNbTab12, text='Transaction Log',)
 serverNb.add(serverNbTab10, text='Sysadmins',)
 serverNb.add(serverNbTab7, text='General Check',)
 serverNb.add(serverNbTab9, text='DBA Tools',)
+serverNb.add(serverNbTab11, text='Other Options',)
 
 inventoryframe['borderwidth'] = 2
 inventoryframe['relief'] = 'groove'

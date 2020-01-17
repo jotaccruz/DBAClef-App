@@ -18,6 +18,12 @@ from dbaClefDrivers import *
 #from mysql.connector.constants import ClientFlag
 #from mysql.connector import errorcode
 
+def error_handler(err, title):
+    tkinter.messagebox.showerror("dbaClef - Conn error: "+ title , err)
+
+def success_handler(title,message):
+    tkinter.messagebox.showinfo("dbaClef - " + title,message)
+
 def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
     #mysqlserver = '172.25.20.17'
     mysqldatabase = 'db_legacy_maintenance'
@@ -40,7 +46,9 @@ def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
         mysqlconn = mysql.connector.connect(**config)
         return mysqlconn
     except mysql.connector.Error as err:
-        messagebox.showinfo ("Connection Error", err)
+        error_handler(err,"Inventory Database")
+        #messagebox.showinfo ("Connection Error", err)
+        #return err
         
 def mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
@@ -57,10 +65,19 @@ def mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
     #                          +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
     #                          +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
     #                          "TrustServerCertificate=yes;Application Name=dbaClef;"
-                              
-    mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
+    if (mssqlusername==''):
+        mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
                               +mssqlserver+"\\"+mssqlinstance+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
                               "TrustServerCertificate=yes;Application Name=dbaClef;"
+    else:
+        mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
+                              +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
+                              +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
+                              "TrustServerCertificate=yes;Application Name=dbaClef;"
+                              
+    #mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
+    #                          +mssqlserver+"\\"+mssqlinstance+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
+    #                          "TrustServerCertificate=yes;Application Name=dbaClef;"
     #print (mssqlconnection_string)
     try:
         mssqlconn = pyodbc.connect(mssqlconnection_string)
