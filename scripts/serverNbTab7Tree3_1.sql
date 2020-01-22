@@ -1,0 +1,6 @@
+SELECT 
+CASE WHEN (CHARINDEX( 'disabled',Text))=0 
+THEN 'Enabled' 
+ELSE RIGHT(LEFT(Text,CHARINDEX( 'disabled',Text)+7),8) 
+END AS [IFI-STATUS] 
+FROM #IFI

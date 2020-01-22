@@ -1,0 +1,1 @@
+SELECT cpu_count ,physical_memory_GB,sql_memory_GB FROM #test;

@@ -1,0 +1,1 @@
+SELECT name AS MailProfile FROM msdb.dbo.sysmail_profile;

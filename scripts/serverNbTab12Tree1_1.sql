@@ -1,0 +1,1 @@
+SELECT * FROM #dbcc_log
