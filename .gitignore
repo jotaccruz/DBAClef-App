@@ -8,3 +8,16 @@ __pycache__/dbaClefOS.cpython-35.pyc
 __pycache__/dbaClefSource.cpython-35.pyc
 __pycache__/dbaClefSQLFiles.cpython-35.pyc
 __pycache__/dbaClefWeb.cpython-35.pyc
+__pycache__/dbaClef.cpython-35.pyc
+build/dbaClef/base_library.zip
+build/dbaClef/dbaClef.exe.manifest
+build/dbaClef/out00-EXE.toc
+build/dbaClef/out00-Analysis.toc
+build/dbaClef/out00-PKG.pkg
+build/dbaClef/out00-PKG.toc
+build/dbaClef/out00-PYZ.pyz
+build/dbaClef/out00-PYZ.toc
+build/dbaClef/out00-Tree.toc
+build/dbaClef/out01-Tree.toc
+build/dbaClef/warndbaClef.txt
+build/dbaClef/xref-dbaClef.html
