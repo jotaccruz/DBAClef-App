@@ -1,0 +1,8 @@
+use DBAdmin;
+IF EXISTS (
+	SELECT *
+	FROM INFORMATION_SCHEMA.ROUTINES
+	WHERE SPECIFIC_SCHEMA = N'dbo'
+	AND SPECIFIC_NAME = N'sp_whoisactive'
+)
+DROP PROCEDURE dbo.get_servicenotification;

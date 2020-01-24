@@ -299,18 +299,20 @@ def get_spwhoisactive_command(mode):
         except IndexError:
             pass
         
-    sqlexec="CREATE DATABASE DBAdmin;"
-    sqlexec1="use DBAdmin; exec sp_changedbowner 'sa';"
+    sqlexec = readFileFromOS(getFileUrl("spButton_0.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("spButton_1.sql","scripts"))
+    
     try:
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+        mssqlexec(selected_row['Server'],selected_row['Instance'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1)
         spButton.config(state=DISABLED)
-        success_handler("DBAdmin","Database was created")
+        success_handler("sp_whoisactive","Store Procedure was created")
     except:
-        spButton.config(state=NORMAL)
-        error_handler("Error","DBAdmin")        
+        ServiceButton.config(state=NORMAL)
+        error_handler("Error","sp_whoisactive")
+        
 #---
 def get_detail_command(mode):
     if (mode == 1):
@@ -792,8 +794,6 @@ def get_detail_command(mode):
     sqlexec1 = readFileFromOS(getFileUrl("serverNbTab7Tree3_0.sql","scripts"))
         
     sqlexec2 = readFileFromOS(getFileUrl("serverNbTab7Tree3_1.sql","scripts"))
-        
-    sqlexec3=""
 
     for i in serverNbTab7Tree3.get_children():
         serverNbTab7Tree3.delete(i)
@@ -953,6 +953,30 @@ def get_detail_command(mode):
     
     serverNbTab9Tree3.tag_configure('need', background='#f86d7e')
     #serverNbTab9Tree3.tag_configure('good', background='#aef38c')
+
+#--Standard Processes Logins
+    sqlexec0 = readFileFromOS(getFileUrl("serverNbTab9Tree4_0.sql","scripts"))
+    
+    sqlexec = readFileFromOS(getFileUrl("serverNbTab9Tree4_1.sql","scripts"))
+    
+    for i in serverNbTab9Tree4.get_children():
+        serverNbTab9Tree4.delete(i)
+    rows=0    
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0,\
+                           sqlexec):
+        if (row[1]=='Missing'):
+            serverNbTab9Tree4.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('need'))
+        else:
+            serverNbTab9Tree4.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('good'))
+        rows=1
+    
+    if rows==0:
+        serverNbTab9Tree4.insert("", END, values=("Missing","",),tags = ('need'))
+        spButton.config(state=NORMAL)
+        
+    serverNbTab9Tree4.tag_configure('need', background='#f86d7e')
+
 
 ####### main ------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1568,6 +1592,29 @@ serverNbTab9Tree3.heading("Name", text="NAME")
 serverNbTab9Tree3.column("Name", minwidth=0,width=200,anchor="w")
 serverNbTab9Tree3.heading("Info", text="INFO")
 serverNbTab9Tree3.column("Info", minwidth=0,width=50,anchor="w")
+
+#--Standard Processes Logins
+labelStandardLogins=ttk.Label(serverNbTab9,text="Standard Processes Logins")
+labelStandardLogins.grid(row=4,column=0,padx=5, pady=5, sticky='w')
+
+StandardLoginsButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_logins_command(ConnMode.get()))
+StandardLoginsButton.grid(row=4, column=1, sticky="w", padx=5, pady=5,)
+StandardLoginsButton.config(state=DISABLED)
+
+serverNbTab9Tree4=ttk.Treeview(serverNbTab9,show='headings',height=3, )
+serverNbTab9Tree4.grid(row=5,column=0,padx=5, pady=5,columnspan=4,sticky='w' )
+serverNbTab9Tree4['columns'] = ('Name','Type','Status','Creation','Db',)
+serverNbTab9Tree4['displaycolumns'] = ('Name','Type','Status','Creation','Db',)
+serverNbTab9Tree4.heading("Name", text="NAME")
+serverNbTab9Tree4.column("Name", minwidth=0,width=250, )
+serverNbTab9Tree4.heading("Type", text="TYPE")
+serverNbTab9Tree4.column("Type", minwidth=0,width=145, )
+serverNbTab9Tree4.heading("Status", text="STATUS")
+serverNbTab9Tree4.column("Status", minwidth=0,width=145, )
+serverNbTab9Tree4.heading("Creation", text="CREATION")
+serverNbTab9Tree4.column("Creation", minwidth=0,width=145, )
+serverNbTab9Tree4.heading("Db", text="DB")
+serverNbTab9Tree4.column("Db", minwidth=0,width=145, )
 
 #Bottoms
 #DBAdminButton = ttk.Button(serverNbTab7, text='Install', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
