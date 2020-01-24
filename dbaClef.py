@@ -33,6 +33,8 @@
 # --add-data "./scripts/serverNbTab9Tree1_0.sql;scripts"
 # --add-data "./scripts/serverNbTab9Tree2_0.sql;scripts"
 # --add-data "./scripts/serverNbTab9Tree3_0.sql;scripts"
+# --add-data "./scripts/serverNbTab9Tree4_0.sql;scripts"
+# --add-data "./scripts/serverNbTab9Tree4_1.sql;scripts"
 # --add-data "./scripts/serverNbTab10Tree1_0.sql;scripts"
 # --add-data "./scripts/serverNbTab12Tree1_0.sql;scripts"
 # --add-data "./scripts/serverNbTab12Tree1_1.sql;scripts"
@@ -42,6 +44,8 @@
 # --add-data "./scripts/serverNbTab12Tree2_3.sql;scripts"
 # --add-data "./scripts/ServiceButton_0.sql;scripts"
 # --add-data "./scripts/ServiceButton_1.sql;scripts"
+# --add-data "./scripts/spButton_0.sql;scripts"
+# --add-data "./scripts/spButton_1.sql;scripts"
 # --i ./files/DBAClef.ico dbaClef.py
  
 #pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
