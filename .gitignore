@@ -1,0 +1,10 @@
+
+.spyproject/codestyle.ini
+.spyproject/encoding.ini
+.spyproject/vcs.ini
+.spyproject/workspace.ini
+__pycache__/dbaClefDrivers.cpython-35.pyc
+__pycache__/dbaClefOS.cpython-35.pyc
+__pycache__/dbaClefSource.cpython-35.pyc
+__pycache__/dbaClefSQLFiles.cpython-35.pyc
+__pycache__/dbaClefWeb.cpython-35.pyc
