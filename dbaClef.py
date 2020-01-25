@@ -189,11 +189,11 @@ def view_command():
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
     
-    query="SELECT srv_name as SERVER, 'GLOBALSOLARWINDS' as INSTANCE, srv_ip as IP,"+\
-            "'1433' as PORT, '' as USER, '' as PWD, srv_os as OS"+\
-            " FROM lgm_servers WHERE"+\
-            " srv_name in"+\
-            " ('SCAEDYAK02','SUSWEYAK05');"
+    query="SELECT srv_name as SERVER, srv_instance as INSTANCE, srv_ip as IP,"+\
+            "srv_ins_port as PORT, '' as USER, '' as PWD, srv_os as OS"+\
+            " FROM lgm_servers_dbaclef"# WHERE"+\
+            #" srv_name in"+\
+            #" ('SCAEDYAK02','SUSWEYAK05');"
     #print (query)
     #query="SELECT srv_name as SERVER, srv_ip as IP, srv_os as OS,"\
     #       "srv_type as ENGINE, srv_location as LOCATION, srv_domain "\
@@ -221,7 +221,7 @@ def get_dbadmin_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
-                "Instance": e2.get(),
+                "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
                 }
@@ -234,9 +234,9 @@ def get_dbadmin_command(mode):
     sqlexec="CREATE DATABASE DBAdmin;"
     sqlexec1="use DBAdmin; exec sp_changedbowner 'sa';"
     try:
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+        mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+        mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1)
         DBAdminButton.config(state=DISABLED)
         success_handler("DBAdmin","Database was created")
@@ -249,7 +249,7 @@ def get_servicerestart_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
-                "Instance": e2.get(),
+                "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
                 }
@@ -268,14 +268,14 @@ def get_servicerestart_command(mode):
     sqlexec0 = readFileFromOS(getFileUrl("ServiceButton_1.sql","scripts"))
     
     try:
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"msdb",
+        mssqlexec(selected_row['Server'],selected_row['Port'],"msdb",
                                selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"msdb",
+        mssqlexec(selected_row['Server'],selected_row['Port'],"msdb",
                                selected_row['User'],selected_row['Pwd'],sqlexec0)
     
         sqlexec1="EXECUTE dbo.get_servicenotification '" + dba_profile + "', '" + server + "';"
     
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"msdb",
+        mssqlexec(selected_row['Server'],selected_row['Port'],"msdb",
                                selected_row['User'],selected_row['Pwd'],sqlexec1)
         
         ServiceButton.config(state=DISABLED)
@@ -284,7 +284,7 @@ def get_servicerestart_command(mode):
         ServiceButton.config(state=NORMAL)
         error_handler("Error","Service Restart")        
 
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
 
 #-------------------
@@ -293,7 +293,7 @@ def get_spwhoisactive_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
-                "Instance": e2.get(),
+                "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
                 }
@@ -307,9 +307,9 @@ def get_spwhoisactive_command(mode):
     sqlexec1 = readFileFromOS(getFileUrl("spButton_1.sql","scripts"))
     
     try:
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"DBAdmin",\
+        mssqlexec(selected_row['Server'],selected_row['Port'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Instance'],"DBAdmin",\
+        mssqlexec(selected_row['Server'],selected_row['Port'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1)
         spButton.config(state=DISABLED)
         success_handler("sp_whoisactive","Store Procedure was created")
@@ -322,7 +322,7 @@ def get_detail_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
-                "Instance": e2.get(),
+                "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
                 }
@@ -344,7 +344,7 @@ def get_detail_command(mode):
     for i in StatusTree1.get_children():
         StatusTree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree1.insert("", END, values=(row[0],row[1]))
         
@@ -356,7 +356,7 @@ def get_detail_command(mode):
     for i in StatusTree2.get_children():
         StatusTree2.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
         StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
@@ -366,7 +366,7 @@ def get_detail_command(mode):
     for i in StatusTree3.get_children():
         StatusTree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
 
@@ -378,7 +378,7 @@ def get_detail_command(mode):
         StatusTree4.delete(i)
         
     try:
-        for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+        for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                                selected_row['User'],selected_row['Pwd'],sqlexec1):
             version = mssqlversioncomplete(row[0])
             #version = mssqlversioncomplete("12.0.6259")
@@ -429,7 +429,7 @@ def get_detail_command(mode):
     for i in serverNbTab1Tree1.get_children():
         serverNbTab1Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[1]!=row[2]):
             serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],),tags = ('need'))
@@ -536,9 +536,9 @@ def get_detail_command(mode):
 #------------------------------------------------------------------------------
     sqlexec = readFileFromOS(getFileUrl("serverNbTab4Tree1_0.sql","scripts"))
     sqlexec0 = readFileFromOS(getFileUrl("serverNbTab4Tree1_1.sql","scripts"))
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0)
 
     sqlexec1 = readFileFromOS(getFileUrl("serverNbTab4Tree1_2.sql","scripts"))
@@ -548,7 +548,7 @@ def get_detail_command(mode):
     for i in serverNbTab4Tree1.get_children():
         serverNbTab4Tree1.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (row[2]==1):
@@ -558,7 +558,7 @@ def get_detail_command(mode):
             serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
                                      tags = ('good',))
     
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
     serverNbTab4Tree1.tag_configure('need', background='#f86d7e')
 
@@ -572,7 +572,7 @@ def get_detail_command(mode):
         serverNbTab5Tree1.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree1.insert("", END, values=(row[0],row[1],row[2],row[3]),tags = ('good'))
         rows=1
@@ -590,7 +590,7 @@ def get_detail_command(mode):
         serverNbTab5Tree3.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]),tags = ('good'))
         rows=1
@@ -609,7 +609,7 @@ def get_detail_command(mode):
     for rows in serverNbTab5Tree2.get_children():
         serverNbTab5Tree2.delete(rows)
         
-    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (rows[1]=='1'):
@@ -629,7 +629,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree1.get_children():
         serverNbTab6Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='Disabled'):
             serverNbTab6Tree1.insert("", END, values=(row[0]), tags = ('need'))
@@ -645,9 +645,9 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree2.get_children():
         serverNbTab6Tree2.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[0]=='Running'):
+        if (row[0]=='Running.'):
             serverNbTab6Tree2.insert("", END, values=(row[0]), tags = ('good'))
         else:
             serverNbTab6Tree2.insert("", END, values=(row[0]), tags = ('need'))
@@ -661,7 +661,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree3.get_children():
         serverNbTab6Tree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='Disabled'):
             serverNbTab6Tree3.insert("", END, values=(row[0]), tags = ('need'))
@@ -678,7 +678,7 @@ def get_detail_command(mode):
         serverNbTab6Tree4.delete(i)
     
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree4.insert("", END, values=(row[0]), tags = ('good'))
         rows=1
@@ -696,7 +696,7 @@ def get_detail_command(mode):
         serverNbTab6Tree5.delete(i)
     
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree5.insert("", END, values=(row[0]), tags = ('good'))
         rows=1
@@ -715,7 +715,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree6.get_children():
         serverNbTab6Tree6.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (row[0]=='Enabled'):
@@ -734,7 +734,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree7.get_children():
         serverNbTab6Tree7.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         #print (row[0])
@@ -753,7 +753,7 @@ def get_detail_command(mode):
         serverNbTab6Tree8.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree8.insert("", END, values=(row[0],),tags = ('good'))
         rows=1
@@ -771,7 +771,7 @@ def get_detail_command(mode):
     for i in serverNbTab7Tree1.get_children():
         serverNbTab7Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab7Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],),tags = ('need'))
     serverNbTab7Tree1.tag_configure('need', background='#f86d7e')
@@ -786,7 +786,7 @@ def get_detail_command(mode):
     for i in serverNbTab7Tree2.get_children():
         serverNbTab7Tree2.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[2]=='OFF'):
             serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),tags = ('need'))
@@ -802,7 +802,7 @@ def get_detail_command(mode):
     for i in serverNbTab7Tree3.get_children():
         serverNbTab7Tree3.delete(i)
         
-    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (rows[0]=='disabled'):
@@ -820,7 +820,7 @@ def get_detail_command(mode):
     for i in serverNbTab8Tree1.get_children():
         serverNbTab8Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[3]!='sa' or row[2]=='Take Care'):
             serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
@@ -838,7 +838,7 @@ def get_detail_command(mode):
     for i in serverNbTab12Tree1.get_children():
         serverNbTab12Tree1.delete(i)
         
-    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",
+    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec1,
                            sqlexec2):
         if (rows[2]>90):
@@ -851,9 +851,9 @@ def get_detail_command(mode):
 
     sqlexec = readFileFromOS(getFileUrl("serverNbTab12Tree2_0.sql","scripts"))
     sqlexec0 = readFileFromOS(getFileUrl("serverNbTab12Tree2_1.sql","scripts"))
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0)
 
     sqlexec1 = readFileFromOS(getFileUrl("serverNbTab12Tree2_2.sql","scripts"))
@@ -863,7 +863,7 @@ def get_detail_command(mode):
     for i in serverNbTab12Tree2.get_children():
         serverNbTab12Tree2.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
         if (row[1]>200):
@@ -871,7 +871,7 @@ def get_detail_command(mode):
         else:
             serverNbTab12Tree2.insert("", END, values=(row[0],row[1],),tag='good')
     
-    mssqlexec(selected_row['Server'],selected_row['Instance'],"master",\
+    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
 
     serverNbTab12Tree2.tag_configure('need', background='#f86d7e')
@@ -884,7 +884,7 @@ def get_detail_command(mode):
     for i in serverNbTab10Tree1.get_children():
         serverNbTab10Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='BUILTIN\\Users' or row[0]=='NT AUTHORITY\\SYSTEM'):
             serverNbTab10Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('need'))
@@ -901,7 +901,7 @@ def get_detail_command(mode):
         serverNbTab9Tree1.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[3]!='sa' or row[2]=='Take Care' ):
             serverNbTab9Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
@@ -923,7 +923,7 @@ def get_detail_command(mode):
         serverNbTab9Tree2.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab9Tree2.insert("", END, values=(row[0],row[1],row[2],row[3],),tags = ('good'))
         rows=1
@@ -942,7 +942,7 @@ def get_detail_command(mode):
         serverNbTab9Tree3.delete(i)
     
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Instance'],"master",
+    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]!='Missing'):
             serverNbTab9Tree3.insert("", END, values=(row[0],row[1],),tags = ('good'))
@@ -966,7 +966,7 @@ def get_detail_command(mode):
     for i in serverNbTab9Tree4.get_children():
         serverNbTab9Tree4.delete(i)
     rows=0    
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Instance'],"master",\
+    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0,\
                            sqlexec):
         if (row[1]=='Missing'):
@@ -1072,10 +1072,10 @@ pass_text=StringVar()
 pas=ttk.Entry(inventory2frame,textvariable=pass_text,width=20,show='*')
 pas.grid(row=4,column=1,padx=5, pady=5,sticky="w")
 
-labelinstance=ttk.Label(inventory3frame,text="Instance", wraplength=50)
-labelinstance.grid(row=1,column=0,padx=5, pady=5, sticky='w')
-instance=StringVar()
-e2=ttk.Entry(inventory3frame,textvariable=instance,width=20)
+labelPort=ttk.Label(inventory3frame,text="Port", wraplength=50)
+labelPort.grid(row=1,column=0,padx=5, pady=5, sticky='w')
+Port=StringVar()
+e2=ttk.Entry(inventory3frame,textvariable=Port,width=20)
 e2.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
 labelSQLUser=ttk.Label(inventoryframe,text="SQL Login", wraplength=50)
@@ -1110,7 +1110,7 @@ InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=3)
 InventoryTree.grid(row=4,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
 InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd','Os')
 InventoryTree['displaycolumns'] = ('Server', 'Instance', 'Ip', 'Port', 'Os')
-InventoryTree.column("Server", minwidth=0,width=85)
+InventoryTree.column("Server", minwidth=0,width=125)
 InventoryTree.heading("Server", text="SERVER",)
 InventoryTree.column("Instance", minwidth=0,width=140)
 InventoryTree.heading("Instance", text="INSTANCE",)
@@ -1118,7 +1118,7 @@ InventoryTree.column("Ip", minwidth=0,width=80)
 InventoryTree.heading("Ip", text="IP",)
 InventoryTree.column("Port", minwidth=0,width=40)
 InventoryTree.heading("Port", text="PORT",)
-InventoryTree.column("Os", minwidth=0,width=80)
+InventoryTree.column("Os", minwidth=0,width=65)
 InventoryTree.heading("Os", text="OS",)
 InventoryTree.heading("User", text="USER")
 InventoryTree.heading("Pwd", text="PWD")

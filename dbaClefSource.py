@@ -26,7 +26,7 @@ def success_handler(title,message):
 
 def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
     #mysqlserver = '172.25.20.17'
-    mysqldatabase = 'db_legacy_maintenance'
+    mysqldatabase = 'db_legacy_maintenance_dbaclef'
     #mysqlusername = 'ISJCruz'
     #mysqlpsw = 'T3lu52018!'
     #mysqlinstancename = 'SUSWEYAK03'
@@ -50,33 +50,35 @@ def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
         #messagebox.showinfo ("Connection Error", err)
         #return err
         
-def mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw):
+def mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
     mssqldriver = mssqlodbc()
     #print (mssqldriver)
     #mssqlserver = 'tcp:35.247.3.208,1433'
     #mssqlserver = 'SCAEDYAK02'
-    #mssqlinstance = 'GLOBALSOLARWINDS'
+    #mssqlport = 'GLOBALSOLARWINDS'
     #mssqldatabase = 'DBAdmin'
     #mssqlusername = 'test'
     #mssqlpsw = ''
-    #mssqlinstancename = 'localhost'
+    #mssqlportname = 'localhost'
     #mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
     #                          +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
     #                          +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
     #                          "TrustServerCertificate=yes;Application Name=dbaClef;"
+    if (mssqlport==''):
+        mssqlport='1433'
     if (mssqlusername==''):
         mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
-                              +mssqlserver+"\\"+mssqlinstance+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
+                              +mssqlserver+","+mssqlport+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
                               "TrustServerCertificate=yes;Application Name=dbaClef;"
     else:
         mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
-                              +mssqlserver+";DATABASE="+mssqldatabase+";UID=" \
+                              +mssqlserver+","+mssqlport+";DATABASE="+mssqldatabase+";UID=" \
                               +mssqlusername+";PWD="+mssqlpsw+";Encrypt=Yes;"+\
                               "TrustServerCertificate=yes;Application Name=dbaClef;"
-                              
+
     #mssqlconnection_string = "DRIVER={"+mssqldriver+"};SERVER="\
-    #                          +mssqlserver+"\\"+mssqlinstance+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
+    #                          +mssqlserver+"\\"+mssqlport+";DATABASE="+mssqldatabase+";trusted_connection=Yes;Encrypt=Yes;"+\
     #                          "TrustServerCertificate=yes;Application Name=dbaClef;"
     #print (mssqlconnection_string)
     try:
@@ -86,24 +88,24 @@ def mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
         sqlstate = ex.args[1]
         messagebox.showinfo ("Connection Error", sqlstate)
         
-def mssqlexec(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
-    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
+def mssqlexec(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
+    conn=mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     conn.autocommit = True
     cur.execute(sqlexec)
     conn.close()
 
-def mssqldetail(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
-    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
+def mssqldetail(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
+    conn=mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec)
     rows=cur.fetchall()
     conn.close()
     return rows
 
-def mssqldetailsp(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
+def mssqldetailsp(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
                   sqlexec2,sqlexec3):
-    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
+    conn=mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec1)
     cur.execute(sqlexec2)
@@ -112,9 +114,9 @@ def mssqldetailsp(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw
     conn.close()
     return rows
 
-def mssqldetail2sql(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
+def mssqldetail2sql(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw,sqlexec1,\
                   sqlexec3):
-    conn=mssqlconnect(mssqlserver,mssqlinstance,mssqldatabase,mssqlusername,mssqlpsw)
+    conn=mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
     cur.execute(sqlexec1)
     cur.execute(sqlexec3)
