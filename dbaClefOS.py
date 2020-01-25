@@ -68,17 +68,50 @@ def pageinfo(selected_modes, server, wmiuser, wmipass):
                 ,'MaximumSize': ""}
     pages = []
     for Volumes3 in conn.win32_ComputerSystem():
-        pageinfo.update({'Automatic': Volumes3.AutomaticManagedPagefile\
-                         ,'SystemName': Volumes3.Caption})
+        
+        if hasattr(Volumes3,'AutomaticManagedPagefile'):
+            pageinfo.update({'Automatic': Volumes3.AutomaticManagedPagefile})
+        else:
+            pageinfo.update({'Automatic': 'False'})
+            
+        if hasattr(Volumes3,'Caption'):
+            pageinfo.update({'SystemName': Volumes3.Caption})
+        else:
+            pageinfo.update({'SystemName': 'N/A'})
+            
     for Volumes in conn.win32_pagefileUsage():
         for Volumes2 in conn.Win32_PageFile():
-            if (Volumes.Name==Volumes2.Name):
-                pageinfo.update({'CurrentUsage': Volumes.CurrentUsage\
-                                 ,'PeakUsage': Volumes.PeakUsage\
-                                 ,'Caption': Volumes2.Caption\
-                                 ,'Status': Volumes2.Status\
-                                 ,'InitialSize': Volumes2.InitialSize\
-                                 ,'MaximumSize': Volumes2.MaximumSize})
+            if (Volumes.Name.replace('\\','').lower()==Volumes2.Name.replace('\\','').lower()):
+                if hasattr(Volumes,'CurrentUsage'):
+                    pageinfo.update({'CurrentUsage': Volumes.CurrentUsage})
+                else:
+                    pageinfo.update({'CurrentUsage': 'N/A'})
+            
+                if hasattr(Volumes,'PeakUsage'):
+                    pageinfo.update({'PeakUsage': Volumes.PeakUsage})
+                else:
+                    pageinfo.update({'PeakUsage': 'N/A'})
+                    
+                if hasattr(Volumes,'Caption'):
+                    pageinfo.update({'Caption': Volumes2.Caption})
+                else:
+                    pageinfo.update({'Caption': 'N/A'})
+                    
+                if hasattr(Volumes,'Status'):
+                    pageinfo.update({'Status': Volumes2.Status})
+                else:
+                    pageinfo.update({'Status': 'N/A'})
+                    
+                if hasattr(Volumes,'InitialSize'):
+                    pageinfo.update({'InitialSize': Volumes2.InitialSize})
+                else:
+                    pageinfo.update({'InitialSize': 'N/A'})
+                    
+                if hasattr(Volumes,'MaximumSize'):
+                    pageinfo.update({'MaximumSize': Volumes2.MaximumSize})
+                else:
+                    pageinfo.update({'MaximumSize': 'N/A'})
+                    
         pages.append(pageinfo)
     return pages
 

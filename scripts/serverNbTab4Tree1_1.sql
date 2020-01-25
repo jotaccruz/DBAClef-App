@@ -15,9 +15,11 @@ BEGIN
 	EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer',N'BackupDirectory';
 	INSERT INTO #DPaths(Type,Location)
 	VALUES('Error',SERVERPROPERTY('ErrorLogFileName'));
-	DECLARE @Bandera int = 0
-	DECLARE @Location nvarchar(250) = ''
-	SELECT @Bandera=1,@Location=CONCAT(CONVERT(NVARCHAR(250),a.Location),'-->',CONVERT(NVARCHAR(250),b.Location))
+	DECLARE @Bandera int
+	DECLARE @Location nvarchar(250)
+	SELECT @Bandera = 0
+	SELECT @Location = ''
+	SELECT @Bandera=1,@Location=(CONVERT(NVARCHAR(250),a.Location)+'-->'+CONVERT(NVARCHAR(250),b.Location))
 	FROM #RDPaths a CROSS JOIN #DPaths b
 	WHERE a.Type='DefaultData'
 	AND a.Type=b.Type
@@ -30,7 +32,7 @@ BEGIN
 		END
 	SELECT @Bandera=0
 	SELECT @Location=''
-	SELECT @Bandera=1,@Location=CONCAT(CONVERT(NVARCHAR(250),a.Location),'-->',CONVERT(NVARCHAR(250),b.Location))
+	SELECT @Bandera=1,@Location=(CONVERT(NVARCHAR(250),a.Location)+'-->'+CONVERT(NVARCHAR(250),b.Location))
 	FROM #RDPaths a CROSS JOIN #DPaths b
 	WHERE a.Type='DefaultLog'
 	AND a.Type=b.Type
