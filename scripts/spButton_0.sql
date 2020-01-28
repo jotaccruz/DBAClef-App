@@ -5,4 +5,4 @@ IF EXISTS (
 	WHERE SPECIFIC_SCHEMA = N'dbo'
 	AND SPECIFIC_NAME = N'sp_whoisactive'
 )
-DROP PROCEDURE dbo.get_servicenotification;
+DROP PROCEDURE dbo.sp_whoisactive;

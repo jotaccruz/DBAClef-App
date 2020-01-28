@@ -46,6 +46,7 @@
 # --add-data "./scripts/ServiceButton_1.sql;scripts"
 # --add-data "./scripts/spButton_0.sql;scripts"
 # --add-data "./scripts/spButton_1.sql;scripts"
+# --add-data "./scripts/StandardLoginsButton_0.sql;scripts"
 # --i ./files/DBAClef.ico dbaClef.py
  
 #pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
@@ -97,6 +98,7 @@ def getRbselected(mode):
         #view_command()
     #else:
         cleanall(InventoryTree)
+        cleanall(VersionTree1)
         cleanall(StatusTree1)
         cleanall(StatusTree2)
         cleanall(StatusTree3)
@@ -124,6 +126,7 @@ def getRbselected(mode):
         cleanall(serverNbTab9Tree1)
         cleanall(serverNbTab9Tree2)
         cleanall(serverNbTab9Tree3)
+        cleanall(serverNbTab9Tree4)
         cleanall(serverNbTab10Tree1)
         cleanall(serverNbTab12Tree1)
         cleanall(serverNbTab12Tree2)
@@ -217,6 +220,8 @@ def get_selected_command(event):
 
 
 #Install buttons
+
+#DBAdmin database Install
 def get_dbadmin_command(mode):
     if (mode == 1):
         selected_row = {
@@ -244,7 +249,7 @@ def get_dbadmin_command(mode):
         DBAdminButton.config(state=NORMAL)
         error_handler("Error","DBAdmin")
 
-
+#Service Restart Notification Job
 def get_servicerestart_command(mode):
     if (mode == 1):
         selected_row = {
@@ -287,8 +292,7 @@ def get_servicerestart_command(mode):
     mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
 
-#-------------------
-
+#Sp Who is active
 def get_spwhoisactive_command(mode):
     if (mode == 1):
         selected_row = {
@@ -314,8 +318,36 @@ def get_spwhoisactive_command(mode):
         spButton.config(state=DISABLED)
         success_handler("sp_whoisactive","Store Procedure was created")
     except:
-        ServiceButton.config(state=NORMAL)
+        spButton.config(state=NORMAL)
         error_handler("Error","sp_whoisactive")
+
+
+#Standard Processes Logins
+def get_logins_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+        except IndexError:
+            pass
+        
+    sqlexec = readFileFromOS(getFileUrl("StandardLoginsButton_0.sql","scripts"))
+    
+    try:
+        mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        StandardLoginsButton.config(state=DISABLED)
+        success_handler("Logins","Logins were created")
+    except:
+        StandardLoginsButton.config(state=NORMAL)
+        error_handler("Error","Logins")
+
         
 #---
 def get_detail_command(mode):
@@ -370,6 +402,16 @@ def get_detail_command(mode):
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
 
+#Is Supported?
+        
+    for i in StatusTree3.get_children():
+        if (float(StatusTree3.item(i)["values"][0][0:2])<11):
+            VersionTree1.insert("", END, values=("So\\ Sorry!!!\\ Version\\ is\\ not\\ supported.\\ Some\\ functionalities\\ may\\ don't\\ work"), tags = ('need',))
+        else:
+            VersionTree1.insert("", END, values=("Version\\ is\\ supported."), tags = ('good',))
+    
+    VersionTree1.tag_configure('need', background='#f86d7e')
+                               
 #Missing updates
     
     sqlexec1=readFileFromOS(getFileUrl("StatusTree4_0.sql","scripts"))
@@ -971,13 +1013,14 @@ def get_detail_command(mode):
                            sqlexec):
         if (row[1]=='Missing'):
             serverNbTab9Tree4.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('need'))
+            StandardLoginsButton.config(state=NORMAL)
         else:
             serverNbTab9Tree4.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab9Tree4.insert("", END, values=("Missing","",),tags = ('need'))
-        spButton.config(state=NORMAL)
+        StandardLoginsButton.config(state=NORMAL)
         
     serverNbTab9Tree4.tag_configure('need', background='#f86d7e')
 
@@ -1029,7 +1072,7 @@ if os.path.isfile(iconFileName):
 
 #Frame Controls
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
-inventoryframe.grid(row=0,column=0,padx=5, pady=5, )
+inventoryframe.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
 
 inventory2frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
 inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=4,sticky='n',)
@@ -1037,8 +1080,11 @@ inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=4,sticky='n',)
 inventory3frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
 inventory3frame.grid(row=0,column=1,padx=5, pady=5, sticky='n',columnspan=2)
 
+versionframe = ttk.LabelFrame(window, width=525, height=50,)
+versionframe.grid(row=0,column=1,padx=5, pady=5, sticky='n')
+
 statusframe = ttk.LabelFrame(window, width=525, height=192,text="Status")
-statusframe.grid(row=0,column=1,padx=5, pady=5)
+statusframe.grid(row=1,column=1,padx=5, pady=5, sticky='n')
 
 #RadioButton Controls
 ConnMode = IntVar()
@@ -1138,6 +1184,13 @@ InventoryTree.bind('<Double-Button-1>',lambda x: DetailButton.invoke())
 
 #dbSrvButton2 = ttk.Button(statusframe, image=Image)
 #dbSrvButton2.grid(row=0,column=1,padx=5, pady=5,sticky="w")
+
+VersionTree1=ttk.Treeview(versionframe,show='headings',height=1,)
+VersionTree1.grid(row=0,column=0,padx=5, pady=5,sticky="w",) #rowspan=2,columnspan=2,
+VersionTree1['columns'] = ('Result',)
+VersionTree1['displaycolumns'] = ('Result')
+VersionTree1.column("Result", minwidth=0,width=515,anchor='w')
+VersionTree1.heading("Result", text="VERSION SUPPORTED", )
 
 StatusTree1=ttk.Treeview(statusframe,show='headings',height=1)
 StatusTree1.grid(row=0,column=0,padx=5, pady=5,rowspan=2,columnspan=2,sticky="w")
@@ -1621,8 +1674,8 @@ serverNbTab9Tree4.heading("Db", text="DB")
 serverNbTab9Tree4.column("Db", minwidth=0,width=145, )
 
 #Bottoms
-#DBAdminButton = ttk.Button(serverNbTab7, text='Install', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
-#DBAdminButton.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+#LoginsButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_logins_command(ConnMode.get()))
+#LoginsButton.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
 #Adding all Tabs to the Notebook
 serverNb.add(serverNbTab1, text='Services',)
