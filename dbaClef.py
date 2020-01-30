@@ -46,6 +46,7 @@
 # --add-data "./scripts/ServiceButton_1.sql;scripts"
 # --add-data "./scripts/spButton_0.sql;scripts"
 # --add-data "./scripts/spButton_1.sql;scripts"
+# --add-data "./scripts/StandardLoginsButton_0.sql;scripts"
 # --i ./files/DBAClef.ico dbaClef.py
  
 #pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
@@ -85,48 +86,54 @@ from PIL import Image,ImageTk
 import webbrowser
 import dbaClefSQLFiles
 from dbaClefSQLFiles import *
+import dbaClefReport
+from dbaClefReport import *
 
 window=Tk()
 
 #Funtions----------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #---
+def cleanallone():
+    cleanall(VersionTree1)
+    cleanall(StatusTree1)
+    cleanall(StatusTree2)
+    cleanall(StatusTree3)
+    cleanall(StatusTree4)
+    cleanall(serverNbTab1Tree1)
+    cleanall(serverNbTab1Tree2)
+    cleanall(serverNbTab2Tree1)
+    cleanall(serverNbTab3Tree1)
+    cleanall(serverNbTab4Tree1)
+    cleanall(serverNbTab5Tree1)
+    cleanall(serverNbTab5Tree2)
+    cleanall(serverNbTab5Tree3)
+    cleanall(serverNbTab6Tree1)
+    cleanall(serverNbTab6Tree2)
+    cleanall(serverNbTab6Tree3)
+    cleanall(serverNbTab6Tree4)
+    cleanall(serverNbTab6Tree5)
+    cleanall(serverNbTab6Tree6)
+    cleanall(serverNbTab6Tree7)
+    cleanall(serverNbTab6Tree8)
+    cleanall(serverNbTab7Tree1)
+    cleanall(serverNbTab7Tree2)
+    cleanall(serverNbTab7Tree3)
+    cleanall(serverNbTab8Tree1)
+    cleanall(serverNbTab9Tree1)
+    cleanall(serverNbTab9Tree2)
+    cleanall(serverNbTab9Tree3)
+    cleanall(serverNbTab9Tree4)
+    cleanall(serverNbTab10Tree1)
+    cleanall(serverNbTab12Tree1)
+    cleanall(serverNbTab12Tree2)
+
 def getRbselected(mode):
     if (mode == 0):
         InventoryButton.config(state=NORMAL)
         #view_command()
     #else:
-        cleanall(InventoryTree)
-        cleanall(StatusTree1)
-        cleanall(StatusTree2)
-        cleanall(StatusTree3)
-        cleanall(StatusTree4)
-        cleanall(serverNbTab1Tree1)
-        cleanall(serverNbTab1Tree2)
-        cleanall(serverNbTab2Tree1)
-        cleanall(serverNbTab3Tree1)
-        cleanall(serverNbTab4Tree1)
-        cleanall(serverNbTab5Tree1)
-        cleanall(serverNbTab5Tree2)
-        cleanall(serverNbTab5Tree3)
-        cleanall(serverNbTab6Tree1)
-        cleanall(serverNbTab6Tree2)
-        cleanall(serverNbTab6Tree3)
-        cleanall(serverNbTab6Tree4)
-        cleanall(serverNbTab6Tree5)
-        cleanall(serverNbTab6Tree6)
-        cleanall(serverNbTab6Tree7)
-        cleanall(serverNbTab6Tree8)
-        cleanall(serverNbTab7Tree1)
-        cleanall(serverNbTab7Tree2)
-        cleanall(serverNbTab7Tree3)
-        cleanall(serverNbTab8Tree1)
-        cleanall(serverNbTab9Tree1)
-        cleanall(serverNbTab9Tree2)
-        cleanall(serverNbTab9Tree3)
-        cleanall(serverNbTab10Tree1)
-        cleanall(serverNbTab12Tree1)
-        cleanall(serverNbTab12Tree2)
+        cleanallone()
     else:
         InventoryButton.config(state=DISABLED)
 #---
@@ -157,6 +164,9 @@ def resource_path(relative_path):
 
 def About():
     tkinter.messagebox.showinfo(title="dbaClef", message="Telus International - dbaClef v 1.0",)
+    for i in serverNbTab1Tree1.get_children():
+        server=(serverNbTab1Tree1.item(i)["values"][2])
+    ReportAssessment(server,StatusTree4)
 
 def hello():
     webbrowser.open("https://docs.google.com/document/d/17QOtcPCKPlMlFKxTCVttlI-f-g5WccGF")
@@ -217,10 +227,13 @@ def get_selected_command(event):
 
 
 #Install buttons
+
+#DBAdmin database Install
 def get_dbadmin_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
                 "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
@@ -228,15 +241,16 @@ def get_dbadmin_command(mode):
     else:
         try:
             selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
         except IndexError:
             pass
         
     sqlexec="CREATE DATABASE DBAdmin;"
     sqlexec1="use DBAdmin; exec sp_changedbowner 'sa';"
     try:
-        mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1)
         DBAdminButton.config(state=DISABLED)
         success_handler("DBAdmin","Database was created")
@@ -244,11 +258,12 @@ def get_dbadmin_command(mode):
         DBAdminButton.config(state=NORMAL)
         error_handler("Error","DBAdmin")
 
-
+#Service Restart Notification Job
 def get_servicerestart_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
                 "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
@@ -256,6 +271,7 @@ def get_servicerestart_command(mode):
     else:
         try:
             selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
         except IndexError:
             pass
         
@@ -268,14 +284,14 @@ def get_servicerestart_command(mode):
     sqlexec0 = readFileFromOS(getFileUrl("ServiceButton_1.sql","scripts"))
     
     try:
-        mssqlexec(selected_row['Server'],selected_row['Port'],"msdb",
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"msdb",
                                selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Port'],"msdb",
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"msdb",
                                selected_row['User'],selected_row['Pwd'],sqlexec0)
     
         sqlexec1="EXECUTE dbo.get_servicenotification '" + dba_profile + "', '" + server + "';"
     
-        mssqlexec(selected_row['Server'],selected_row['Port'],"msdb",
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"msdb",
                                selected_row['User'],selected_row['Pwd'],sqlexec1)
         
         ServiceButton.config(state=DISABLED)
@@ -284,15 +300,15 @@ def get_servicerestart_command(mode):
         ServiceButton.config(state=NORMAL)
         error_handler("Error","Service Restart")        
 
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
 
-#-------------------
-
+#Sp Who is active
 def get_spwhoisactive_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
                 "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
@@ -300,6 +316,7 @@ def get_spwhoisactive_command(mode):
     else:
         try:
             selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
         except IndexError:
             pass
         
@@ -307,21 +324,134 @@ def get_spwhoisactive_command(mode):
     sqlexec1 = readFileFromOS(getFileUrl("spButton_1.sql","scripts"))
     
     try:
-        mssqlexec(selected_row['Server'],selected_row['Port'],"DBAdmin",\
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-        mssqlexec(selected_row['Server'],selected_row['Port'],"DBAdmin",\
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"DBAdmin",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1)
         spButton.config(state=DISABLED)
         success_handler("sp_whoisactive","Store Procedure was created")
     except:
-        ServiceButton.config(state=NORMAL)
+        spButton.config(state=NORMAL)
         error_handler("Error","sp_whoisactive")
+
+
+#Standard Processes Logins
+def get_logins_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
+        except IndexError:
+            pass
         
+    sqlexec = readFileFromOS(getFileUrl("StandardLoginsButton_0.sql","scripts"))
+    
+    try:
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        StandardLoginsButton.config(state=DISABLED)
+        success_handler("Logins","Logins were created")
+    except:
+        StandardLoginsButton.config(state=NORMAL)
+        error_handler("Error","Logins")
+
+
+#DBMail
+def get_mail_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
+        except IndexError:
+            pass
+        
+    sqlexec = readFileFromOS(getFileUrl("mailButton_0.sql","scripts"))
+    
+    try:
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        mailButton.config(state=DISABLED)
+        success_handler("DB Mail","DB Mail successfuly configured")
+    except:
+        mailButton.config(state=NORMAL)
+        error_handler("Error","DB Mail config error")
+
+def get_alerts_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
+        except IndexError:
+            pass
+        
+    sqlexec = readFileFromOS(getFileUrl("AlertsButton_0.sql","scripts"))
+    
+    try:
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        AlertsButton.config(state=DISABLED)
+        success_handler("Alerts","Alerts successfuly configured")
+    except:
+        AlertsButton.config(state=NORMAL)
+        error_handler("Error","Alerts config error")
+
+def get_sa_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
+        except IndexError:
+            pass
+        
+    sqlexec = readFileFromOS(getFileUrl("saButton_0.sql","scripts"))
+    
+    try:
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        saButton.config(state=DISABLED)
+        success_handler("DB Owner","sa was set sucessfuly")
+    except:
+        saButton.config(state=NORMAL)
+        error_handler("Error","DB Owner sa config error")
+
 #---
 def get_detail_command(mode):
     if (mode == 1):
         selected_row = {
                 "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
                 "Port": e2.get(),
                 "User": SQLUser.get(),
                 "Pwd": SQLPass.get()
@@ -331,10 +461,12 @@ def get_detail_command(mode):
     else:
         try:
             selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
             
             #WMI Authentication
             wmiuser = simpledialog.askstring("WMI Credential", "Username (ti\\username)", parent=window)
-            wmipass = simpledialog.askstring("WMI Credential", "Password:", show='*', parent=window)
+            if (wmiuser!=None):
+                wmipass = simpledialog.askstring("WMI Credential", "Password:", show='*', parent=window)
         except IndexError:
             pass
 
@@ -344,7 +476,7 @@ def get_detail_command(mode):
     for i in StatusTree1.get_children():
         StatusTree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree1.insert("", END, values=(row[0],row[1]))
         
@@ -356,7 +488,7 @@ def get_detail_command(mode):
     for i in StatusTree2.get_children():
         StatusTree2.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
         StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
@@ -366,10 +498,20 @@ def get_detail_command(mode):
     for i in StatusTree3.get_children():
         StatusTree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1):
         StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5]))
 
+#Is Supported?
+        
+    for i in StatusTree3.get_children():
+        if (float(StatusTree3.item(i)["values"][0][0:2])<11):
+            VersionTree1.insert("", END, values=("So\\ Sorry!!!\\ Version\\ is\\ not\\ supported.\\ Some\\ functionalities\\ may\\ don't\\ work"), tags = ('need',))
+        else:
+            VersionTree1.insert("", END, values=("Version\\ is\\ supported."), tags = ('good',))
+    
+    VersionTree1.tag_configure('need', background='#f86d7e')
+                               
 #Missing updates
     
     sqlexec1=readFileFromOS(getFileUrl("StatusTree4_0.sql","scripts"))
@@ -378,7 +520,7 @@ def get_detail_command(mode):
         StatusTree4.delete(i)
         
     try:
-        for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+        for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                                selected_row['User'],selected_row['Pwd'],sqlexec1):
             version = mssqlversioncomplete(row[0])
             #version = mssqlversioncomplete("12.0.6259")
@@ -429,7 +571,7 @@ def get_detail_command(mode):
     for i in serverNbTab1Tree1.get_children():
         serverNbTab1Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[1]!=row[2]):
             serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],),tags = ('need'))
@@ -442,7 +584,7 @@ def get_detail_command(mode):
         serverNbTab1Tree2.delete(i)
         
     try:
-        for row in mssqlinfo(mode, selected_row['Server'], wmiuser, wmipass):
+        for row in mssqlinfo(mode, selected_row['Ip'], wmiuser, wmipass):
             if (row['State'] == "Stopped"):
                 serverNbTab1Tree2.insert("", END, values=(row['SystemName'],row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('need',))
             else:
@@ -460,7 +602,7 @@ def get_detail_command(mode):
         serverNbTab2Tree1.delete(i)
         
     try:
-        for row in diskinfo(mode, selected_row['Server'], wmiuser, wmipass):
+        for row in diskinfo(mode, selected_row['Ip'], wmiuser, wmipass):
             if (row['DriveType'] == 3):
                 if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
                     serverNbTab2Tree1.insert("", END, values=(row['SystemName'],\
@@ -509,7 +651,7 @@ def get_detail_command(mode):
         serverNbTab3Tree1.delete(i)
         
     try:
-        for row in pageinfo(mode, selected_row['Server'], wmiuser, wmipass):
+        for row in pageinfo(mode, selected_row['Ip'], wmiuser, wmipass):
             serverNbTab3Tree1.insert("", END, values=(row['SystemName'],\
                                                           row['Automatic'],\
                                                           row['Caption'],\
@@ -536,9 +678,9 @@ def get_detail_command(mode):
 #------------------------------------------------------------------------------
     sqlexec = readFileFromOS(getFileUrl("serverNbTab4Tree1_0.sql","scripts"))
     sqlexec0 = readFileFromOS(getFileUrl("serverNbTab4Tree1_1.sql","scripts"))
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0)
 
     sqlexec1 = readFileFromOS(getFileUrl("serverNbTab4Tree1_2.sql","scripts"))
@@ -548,7 +690,7 @@ def get_detail_command(mode):
     for i in serverNbTab4Tree1.get_children():
         serverNbTab4Tree1.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (row[2]==1):
@@ -558,7 +700,7 @@ def get_detail_command(mode):
             serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
                                      tags = ('good',))
     
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
     serverNbTab4Tree1.tag_configure('need', background='#f86d7e')
 
@@ -572,13 +714,14 @@ def get_detail_command(mode):
         serverNbTab5Tree1.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree1.insert("", END, values=(row[0],row[1],row[2],row[3]),tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab5Tree1.insert("", END, values=("Missing","","","",),tags = ('need'))
+        AlertsButton.config(state=NORMAL)
     
     serverNbTab5Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab5Tree1.tag_configure('good', background='#aef38c')
@@ -590,13 +733,14 @@ def get_detail_command(mode):
         serverNbTab5Tree3.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]),tags = ('good'))
-        rows=1
-    
-    if rows==0:
+        rows=rows+1
+    print(rows)
+    if rows==0 or rows<13 :
         serverNbTab5Tree3.insert("", END, values=("Missing","","",),tags = ('need'))
+        AlertsButton.config(state=NORMAL)
     
     serverNbTab5Tree3.tag_configure('need', background='#f86d7e')
     #serverNbTab5Tree3.tag_configure('good', background='#aef38c')
@@ -609,11 +753,12 @@ def get_detail_command(mode):
     for rows in serverNbTab5Tree2.get_children():
         serverNbTab5Tree2.delete(rows)
         
-    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for rows in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (rows[1]=='1'):
             serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('need'))
+            AlertsButton.config(state=NORMAL)
         else:
             serverNbTab5Tree2.insert("", END, values=(rows[0], ),tags = ('good'))
     
@@ -629,7 +774,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree1.get_children():
         serverNbTab6Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='Disabled'):
             serverNbTab6Tree1.insert("", END, values=(row[0]), tags = ('need'))
@@ -645,7 +790,7 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree2.get_children():
         serverNbTab6Tree2.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='Running.'):
             serverNbTab6Tree2.insert("", END, values=(row[0]), tags = ('good'))
@@ -661,10 +806,11 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree3.get_children():
         serverNbTab6Tree3.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='Disabled'):
             serverNbTab6Tree3.insert("", END, values=(row[0]), tags = ('need'))
+            mailButton.config(state=NORMAL)
         else:
             serverNbTab6Tree3.insert("", END, values=(row[0]), tags = ('good'))
     
@@ -678,13 +824,14 @@ def get_detail_command(mode):
         serverNbTab6Tree4.delete(i)
     
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree4.insert("", END, values=(row[0]), tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab6Tree4.insert("", END, values=("Missing"), tags = ('need'))
+        mailButton.config(state=NORMAL)
             
     serverNbTab6Tree4.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree4.tag_configure('good', background='#aef38c')
@@ -696,13 +843,14 @@ def get_detail_command(mode):
         serverNbTab6Tree5.delete(i)
     
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree5.insert("", END, values=(row[0]), tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab6Tree5.insert("", END, values=("Missing"), tags = ('need'))
+        mailButton.config(state=NORMAL)
         
     serverNbTab6Tree5.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree5.tag_configure('good', background='#aef38c')
@@ -715,13 +863,14 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree6.get_children():
         serverNbTab6Tree6.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (row[0]=='Enabled'):
             serverNbTab6Tree6.insert("", END, values=(row[0]), tags = ('good'))
         else:
             serverNbTab6Tree6.insert("", END, values=(row[0]), tags = ('need'))
+            mailButton.config(state=NORMAL)
     
     serverNbTab6Tree6.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree6.tag_configure('good', background='#aef38c')
@@ -734,12 +883,13 @@ def get_detail_command(mode):
     for i in serverNbTab6Tree7.get_children():
         serverNbTab6Tree7.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         #print (row[0])
         if (row[0]=='Missing' or row[0]=='Express Edition'):
             serverNbTab6Tree7.insert("", END, values=(row[0]), tags = ('need'))
+            mailButton.config(state=NORMAL)
         else:
             serverNbTab6Tree7.insert("", END, values=(row[0]), tags = ('good'))
             
@@ -753,7 +903,7 @@ def get_detail_command(mode):
         serverNbTab6Tree8.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab6Tree8.insert("", END, values=(row[0],),tags = ('good'))
         rows=1
@@ -771,7 +921,7 @@ def get_detail_command(mode):
     for i in serverNbTab7Tree1.get_children():
         serverNbTab7Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab7Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],),tags = ('need'))
     serverNbTab7Tree1.tag_configure('need', background='#f86d7e')
@@ -786,7 +936,7 @@ def get_detail_command(mode):
     for i in serverNbTab7Tree2.get_children():
         serverNbTab7Tree2.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[2]=='OFF'):
             serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),tags = ('need'))
@@ -802,7 +952,7 @@ def get_detail_command(mode):
     for i in serverNbTab7Tree3.get_children():
         serverNbTab7Tree3.delete(i)
         
-    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for rows in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec2):
         if (rows[0]=='disabled'):
@@ -820,10 +970,11 @@ def get_detail_command(mode):
     for i in serverNbTab8Tree1.get_children():
         serverNbTab8Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[3]!='sa' or row[2]=='Take Care'):
             serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
+            saButton.config(state=NORMAL)
         else:
             serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('good'))
             
@@ -838,7 +989,7 @@ def get_detail_command(mode):
     for i in serverNbTab12Tree1.get_children():
         serverNbTab12Tree1.delete(i)
         
-    for rows in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",
+    for rows in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec1,
                            sqlexec2):
         if (rows[2]>90):
@@ -851,9 +1002,9 @@ def get_detail_command(mode):
 
     sqlexec = readFileFromOS(getFileUrl("serverNbTab12Tree2_0.sql","scripts"))
     sqlexec0 = readFileFromOS(getFileUrl("serverNbTab12Tree2_1.sql","scripts"))
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0)
 
     sqlexec1 = readFileFromOS(getFileUrl("serverNbTab12Tree2_2.sql","scripts"))
@@ -863,7 +1014,7 @@ def get_detail_command(mode):
     for i in serverNbTab12Tree2.get_children():
         serverNbTab12Tree2.delete(i)
         
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec1,\
                            sqlexec3):
         if (row[1]>200):
@@ -871,7 +1022,7 @@ def get_detail_command(mode):
         else:
             serverNbTab12Tree2.insert("", END, values=(row[0],row[1],),tag='good')
     
-    mssqlexec(selected_row['Server'],selected_row['Port'],"master",\
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
 
     serverNbTab12Tree2.tag_configure('need', background='#f86d7e')
@@ -884,7 +1035,7 @@ def get_detail_command(mode):
     for i in serverNbTab10Tree1.get_children():
         serverNbTab10Tree1.delete(i)
         
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]=='BUILTIN\\Users' or row[0]=='NT AUTHORITY\\SYSTEM'):
             serverNbTab10Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('need'))
@@ -901,7 +1052,7 @@ def get_detail_command(mode):
         serverNbTab9Tree1.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[3]!='sa' or row[2]=='Take Care' ):
             serverNbTab9Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
@@ -923,7 +1074,7 @@ def get_detail_command(mode):
         serverNbTab9Tree2.delete(i)
         
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab9Tree2.insert("", END, values=(row[0],row[1],row[2],row[3],),tags = ('good'))
         rows=1
@@ -942,7 +1093,7 @@ def get_detail_command(mode):
         serverNbTab9Tree3.delete(i)
     
     rows=0
-    for row in mssqldetail(selected_row['Server'],selected_row['Port'],"master",
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[0]!='Missing'):
             serverNbTab9Tree3.insert("", END, values=(row[0],row[1],),tags = ('good'))
@@ -966,18 +1117,19 @@ def get_detail_command(mode):
     for i in serverNbTab9Tree4.get_children():
         serverNbTab9Tree4.delete(i)
     rows=0    
-    for row in mssqldetail2sql(selected_row['Server'],selected_row['Port'],"master",\
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0,\
                            sqlexec):
         if (row[1]=='Missing'):
             serverNbTab9Tree4.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('need'))
+            StandardLoginsButton.config(state=NORMAL)
         else:
             serverNbTab9Tree4.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],),tags = ('good'))
         rows=1
     
     if rows==0:
         serverNbTab9Tree4.insert("", END, values=("Missing","",),tags = ('need'))
-        spButton.config(state=NORMAL)
+        StandardLoginsButton.config(state=NORMAL)
         
     serverNbTab9Tree4.tag_configure('need', background='#f86d7e')
 
@@ -1029,7 +1181,7 @@ if os.path.isfile(iconFileName):
 
 #Frame Controls
 inventoryframe = ttk.LabelFrame(window, width=250, height=200,text="Server")
-inventoryframe.grid(row=0,column=0,padx=5, pady=5, )
+inventoryframe.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
 
 inventory2frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
 inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=4,sticky='n',)
@@ -1037,8 +1189,11 @@ inventory2frame.grid(row=0,column=0,padx=5, pady=5, rowspan=4,sticky='n',)
 inventory3frame = ttk.LabelFrame(inventoryframe, width=250, height=200,text="")
 inventory3frame.grid(row=0,column=1,padx=5, pady=5, sticky='n',columnspan=2)
 
+versionframe = ttk.LabelFrame(window, width=525, height=50,)
+versionframe.grid(row=0,column=1,padx=5, pady=5, sticky='n')
+
 statusframe = ttk.LabelFrame(window, width=525, height=192,text="Status")
-statusframe.grid(row=0,column=1,padx=5, pady=5)
+statusframe.grid(row=1,column=1,padx=5, pady=5, sticky='n')
 
 #RadioButton Controls
 ConnMode = IntVar()
@@ -1138,6 +1293,13 @@ InventoryTree.bind('<Double-Button-1>',lambda x: DetailButton.invoke())
 
 #dbSrvButton2 = ttk.Button(statusframe, image=Image)
 #dbSrvButton2.grid(row=0,column=1,padx=5, pady=5,sticky="w")
+
+VersionTree1=ttk.Treeview(versionframe,show='headings',height=1,)
+VersionTree1.grid(row=0,column=0,padx=5, pady=5,sticky="w",) #rowspan=2,columnspan=2,
+VersionTree1['columns'] = ('Result',)
+VersionTree1['displaycolumns'] = ('Result')
+VersionTree1.column("Result", minwidth=0,width=515,anchor='w')
+VersionTree1.heading("Result", text="VERSION SUPPORTED", )
 
 StatusTree1=ttk.Treeview(statusframe,show='headings',height=1)
 StatusTree1.grid(row=0,column=0,padx=5, pady=5,rowspan=2,columnspan=2,sticky="w")
@@ -1336,6 +1498,10 @@ serverNbTab5Tree2['displaycolumns'] = ('FailSafeOperator')
 serverNbTab5Tree2.heading("FailSafeOperator", text="FAIL SAFE OPERATOR")
 serverNbTab5Tree2.column("FailSafeOperator", minwidth=0,width=175)
 
+AlertsButton = ttk.Button(serverNbTab5, text='Install', underline = 0, command= lambda: get_alerts_command(ConnMode.get()))
+AlertsButton.grid(row=0, column=3, sticky="w", padx=5, pady=5,)
+AlertsButton.config(state=DISABLED)
+
 #Alerts
 serverNbTab5Tree3=ttk.Treeview(serverNbTab5,show='headings',height=9, )
 serverNbTab5Tree3.grid(row=1,column=0,padx=5, pady=5,columnspan=2)
@@ -1355,6 +1521,7 @@ serverNbTab5Tree3.configure(yscrollcommand=scrollbar_vertical.set)
 
 #DBEmail Tab
 #Dashboard
+#--AgentXps
 serverNbTab6Tree1=ttk.Treeview(serverNbTab6,show='headings',height=1, )
 serverNbTab6Tree1.grid(row=0,column=0,padx=5, pady=5, sticky='n')
 serverNbTab6Tree1['columns'] = ('AgentXPs')
@@ -1362,6 +1529,7 @@ serverNbTab6Tree1['displaycolumns'] = ('AgentXPs')
 serverNbTab6Tree1.heading("AgentXPs", text="Agent XPs")
 serverNbTab6Tree1.column("AgentXPs", minwidth=0,width=145,anchor="center")
 
+#--Agent Status
 serverNbTab6Tree2=ttk.Treeview(serverNbTab6,show='headings',height=1, )
 serverNbTab6Tree2.grid(row=0,column=1,padx=5, pady=5, sticky='n')
 serverNbTab6Tree2['columns'] = ('SQLAgentStatus')
@@ -1369,6 +1537,7 @@ serverNbTab6Tree2['displaycolumns'] = ('SQLAgentStatus')
 serverNbTab6Tree2.heading("SQLAgentStatus", text="SQL Agent Status")
 serverNbTab6Tree2.column("SQLAgentStatus", minwidth=0,width=145,anchor="center")
 
+#--Mail Xps
 serverNbTab6Tree3=ttk.Treeview(serverNbTab6,show='headings',height=1, )
 serverNbTab6Tree3.grid(row=0,column=2,padx=5, pady=5, sticky='n')
 serverNbTab6Tree3['columns'] = ('DatabaseMailXPs')
@@ -1376,6 +1545,7 @@ serverNbTab6Tree3['displaycolumns'] = ('DatabaseMailXPs')
 serverNbTab6Tree3.heading("DatabaseMailXPs", text="Database Mail XPs")
 serverNbTab6Tree3.column("DatabaseMailXPs", minwidth=0,width=145,anchor="center")
 
+#--Mail Profile
 serverNbTab6Tree4=ttk.Treeview(serverNbTab6,show='headings',height=2, )
 serverNbTab6Tree4.grid(row=0,column=3,padx=5, pady=5, )
 serverNbTab6Tree4['columns'] = ('MailProfile')
@@ -1383,6 +1553,11 @@ serverNbTab6Tree4['displaycolumns'] = ('MailProfile')
 serverNbTab6Tree4.heading("MailProfile", text="Mail Profile")
 serverNbTab6Tree4.column("MailProfile", minwidth=0,width=145,anchor="center")
 
+mailButton = ttk.Button(serverNbTab6, text='Install', underline = 0, command= lambda: get_mail_command(ConnMode.get()))
+mailButton.grid(row=0, column=4, sticky="w", padx=5, pady=5,)
+mailButton.config(state=DISABLED)
+
+#--Mail Account
 serverNbTab6Tree5=ttk.Treeview(serverNbTab6,show='headings',height=2, )
 serverNbTab6Tree5.grid(row=1,column=0,padx=5, pady=5, )
 serverNbTab6Tree5['columns'] = ('MailAccount')
@@ -1390,6 +1565,7 @@ serverNbTab6Tree5['displaycolumns'] = ('MailAccount')
 serverNbTab6Tree5.heading("MailAccount", text="Mail Account")
 serverNbTab6Tree5.column("MailAccount", minwidth=0,width=145,anchor="center")
 
+#--Agent Mail
 serverNbTab6Tree6=ttk.Treeview(serverNbTab6,show='headings',height=1, )
 serverNbTab6Tree6.grid(row=1,column=1,padx=5, pady=5, sticky='n')
 serverNbTab6Tree6['columns'] = ('SQLAgentMailEnabled')
@@ -1397,6 +1573,7 @@ serverNbTab6Tree6['displaycolumns'] = ('SQLAgentMailEnabled')
 serverNbTab6Tree6.heading("SQLAgentMailEnabled", text="SQL Agent Mail")
 serverNbTab6Tree6.column("SQLAgentMailEnabled", minwidth=0,width=145,anchor="center")
 
+#--Agent Mail Profile
 serverNbTab6Tree7=ttk.Treeview(serverNbTab6,show='headings',height=1, )
 serverNbTab6Tree7.grid(row=1,column=2,padx=5, pady=5, sticky='n')
 serverNbTab6Tree7['columns'] = ('SQLAgentMailProfileEnabled')
@@ -1405,6 +1582,7 @@ serverNbTab6Tree7.heading("SQLAgentMailProfileEnabled", \
                           text="SQL Agent Mail Profile")
 serverNbTab6Tree7.column("SQLAgentMailProfileEnabled", minwidth=0,width=145,anchor="center")
 
+#--Retry
 serverNbTab6Tree8=ttk.Treeview(serverNbTab6,show='headings',height=1, )
 serverNbTab6Tree8.grid(row=1,column=3,padx=5, pady=5, sticky='n')
 serverNbTab6Tree8['columns'] = ('retry_sec')
@@ -1467,7 +1645,7 @@ serverNbTab8Tree1.column("Id", minwidth=0,width=25,anchor="w")
 serverNbTab8Tree1.heading("Name", text="NAME")
 serverNbTab8Tree1.column("Name", minwidth=0,width=160,anchor="w")
 serverNbTab8Tree1.heading("LastBackup", text="LAST BKP")
-serverNbTab8Tree1.column("LastBackup", minwidth=0,width=100,anchor="w")
+serverNbTab8Tree1.column("LastBackup", minwidth=0,width=80,anchor="w")
 serverNbTab8Tree1.heading("Owner", text="OWNER")
 serverNbTab8Tree1.column("Owner", minwidth=0,width=50,anchor="w")
 serverNbTab8Tree1.heading("Creation", text="CREATION")
@@ -1481,7 +1659,11 @@ serverNbTab8Tree1.column("Recovery", minwidth=0,width=70,anchor="w")
 serverNbTab8Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab8Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab8Tree1.heading("LRWait", text="LRWAIT")
-serverNbTab8Tree1.column("LRWait", minwidth=0,width=115,anchor="w")
+serverNbTab8Tree1.column("LRWait", minwidth=0,width=80,anchor="w")
+
+saButton = ttk.Button(serverNbTab8, text='sa owner', underline = 0, command= lambda: get_sa_command(ConnMode.get()))
+saButton.grid(row=0, column=1, sticky="n", padx=5, pady=5,)
+saButton.config(state=DISABLED)
 
 #--#Transaction Log Tab
 #--Transaction Log Usage
@@ -1539,7 +1721,7 @@ serverNbTab9Tree1.grid(row=1,column=0,padx=5, pady=5,columnspan=4 )
 serverNbTab9Tree1['columns'] = ('Id','Name','LastBackup','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
 serverNbTab9Tree1['displaycolumns'] = ('Id','Name','LastBackup','Owner','Creation','Compat','Status','Recovery','Verification','LRWait',)
 serverNbTab9Tree1.heading("Id", text="ID")
-serverNbTab9Tree1.column("Id", minwidth=0,width=50,anchor="w")
+serverNbTab9Tree1.column("Id", minwidth=0,width=25,anchor="w")
 serverNbTab9Tree1.heading("Name", text="NAME")
 serverNbTab9Tree1.column("Name", minwidth=0,width=160,anchor="w")
 serverNbTab9Tree1.heading("LastBackup", text="LAST BKP")
@@ -1621,8 +1803,8 @@ serverNbTab9Tree4.heading("Db", text="DB")
 serverNbTab9Tree4.column("Db", minwidth=0,width=145, )
 
 #Bottoms
-#DBAdminButton = ttk.Button(serverNbTab7, text='Install', underline = 0, command= lambda: get_detail_command(ConnMode.get()))
-#DBAdminButton.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+#LoginsButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_logins_command(ConnMode.get()))
+#LoginsButton.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
 #Adding all Tabs to the Notebook
 serverNb.add(serverNbTab1, text='Services',)
