@@ -206,7 +206,7 @@ def view_command():
     
     query="SELECT srv_name as SERVER, srv_instance as INSTANCE, srv_ip as IP,"+\
             "srv_ins_port as PORT, '' as USER, '' as PWD, srv_os as OS"+\
-            " FROM lgm_servers_moldmydb"# WHERE"+\
+            " FROM lgm_servers"# WHERE"+\
             #" srv_name in"+\
             #" ('SCAEDYAK02','SUSWEYAK05');"
     #print (query)
