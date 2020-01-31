@@ -47,6 +47,11 @@
 # --add-data "./scripts/spButton_0.sql;scripts"
 # --add-data "./scripts/spButton_1.sql;scripts"
 # --add-data "./scripts/StandardLoginsButton_0.sql;scripts"
+# --add-data "./scripts/genchkButton_0.sql;scripts"
+# --add-data "./scripts/saButton_0.sql;scripts"
+# --add-data "./scripts/AlertsButton_0.sql;scripts"
+# --add-data "./scripts/mailButton_0.sql;scripts"
+
 # --i ./files/DBAClef.ico dbaClef.py
  
 #pyinstaller --windowed --onefile --icon=DBAClef.ico dbaClef.py
@@ -81,13 +86,13 @@ import wmi
 from wmi import *
 import dbaClefWeb
 from dbaClefWeb import *
-import PIL
-from PIL import Image,ImageTk
+#import PIL
+#from PIL import Image,ImageTk
 import webbrowser
 import dbaClefSQLFiles
 from dbaClefSQLFiles import *
-import dbaClefReport
-from dbaClefReport import *
+#import dbaClefReport
+#from dbaClefReport import *
 
 window=Tk()
 
@@ -166,7 +171,7 @@ def About():
     tkinter.messagebox.showinfo(title="dbaClef", message="Telus International - dbaClef v 1.0",)
     for i in serverNbTab1Tree1.get_children():
         server=(serverNbTab1Tree1.item(i)["values"][2])
-    ReportAssessment(server,StatusTree4)
+    #ReportAssessment(server,StatusTree4)
 
 def hello():
     webbrowser.open("https://docs.google.com/document/d/17QOtcPCKPlMlFKxTCVttlI-f-g5WccGF")
@@ -445,6 +450,36 @@ def get_sa_command(mode):
     except:
         saButton.config(state=NORMAL)
         error_handler("Error","DB Owner sa config error")
+
+
+
+def get_genchk_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
+        except IndexError:
+            pass
+        
+    sqlexec = readFileFromOS(getFileUrl("genchkButton_0.sql","scripts"))
+    
+    try:
+        mssqlexec(selected_row['Ip'],selected_row['Port'],"master",
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+        genchkButton.config(state=DISABLED)
+        success_handler("Configurations","Configs set sucessfuly")
+    except:
+        genchkButton.config(state=NORMAL)
+        error_handler("Error","Configurations error")
+
 
 #---
 def get_detail_command(mode):
@@ -737,7 +772,6 @@ def get_detail_command(mode):
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]),tags = ('good'))
         rows=rows+1
-    print(rows)
     if rows==0 or rows<13 :
         serverNbTab5Tree3.insert("", END, values=("Missing","","",),tags = ('need'))
         AlertsButton.config(state=NORMAL)
@@ -940,6 +974,7 @@ def get_detail_command(mode):
                            selected_row['User'],selected_row['Pwd'],sqlexec):
         if (row[2]=='OFF'):
             serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),tags = ('need'))
+            genchkButton.config(state=NORMAL)
         else:
             serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),tags = ('good'))
     serverNbTab7Tree2.tag_configure('need', background='#f5e45e')
@@ -962,7 +997,8 @@ def get_detail_command(mode):
    
     serverNbTab7Tree3.tag_configure('need', background='#f86d7e')
     #serverNbTab7Tree3.tag_configure('good', background='#aef38c')
-                                    
+    
+    
 #Databases
 #--DATABASES
     sqlexec = readFileFromOS(getFileUrl("serverNbTab8Tree1_0.sql","scripts"))
@@ -1603,11 +1639,11 @@ serverNbTab7Tree2.grid(row=1,column=0,padx=5, pady=5, sticky='w')
 serverNbTab7Tree2['columns'] = ('Name','Desc','Status',)
 serverNbTab7Tree2['displaycolumns'] = ('Name','Desc','Status',)
 serverNbTab7Tree2.heading("Name", text="NAME")
-serverNbTab7Tree2.column("Name", minwidth=0,width=145)
+serverNbTab7Tree2.column("Name", minwidth=0,width=245)
 serverNbTab7Tree2.heading("Desc", text="DESC")
-serverNbTab7Tree2.column("Desc", minwidth=0,width=250)
+serverNbTab7Tree2.column("Desc", minwidth=0,width=350)
 serverNbTab7Tree2.heading("Status", text="STATUS")
-serverNbTab7Tree2.column("Status", minwidth=0,width=145)
+serverNbTab7Tree2.column("Status", minwidth=0,width=55)
 
 #--IFI Status
 serverNbTab7Tree3=ttk.Treeview(serverNbTab7,show='headings',height=1, )
@@ -1617,22 +1653,30 @@ serverNbTab7Tree3['displaycolumns'] = ('IFIStatus',)
 serverNbTab7Tree3.heading("IFIStatus", text="IFI Status")
 serverNbTab7Tree3.column("IFIStatus", minwidth=0,width=145, anchor="center")
 
+genchkButton = ttk.Button(serverNbTab7, text='Set Configurations', underline = 0, command= lambda: get_genchk_command(ConnMode.get()))
+genchkButton.grid(row=2, column=1, sticky="w", padx=5, pady=5,)
+genchkButton.config(state=DISABLED)
+
+ifiButton = ttk.Button(serverNbTab7, text='Test IFI', underline = 0, command= lambda: get_ifitest_command(ConnMode.get()))
+ifiButton.grid(row=3, column=1, sticky="w", padx=5, pady=5,)
+ifiButton.config(state=DISABLED)
+
 #--PENDING CONFIGURATIONS.
 GenCheckLabel=ttk.Label(serverNbTab7,text="Pending Configurations")
-GenCheckLabel.grid(row=2,column=0,padx=5, pady=5, sticky='w', columnspan=2)
+GenCheckLabel.grid(row=2,column=0,padx=5, pady=5, sticky='w')
 
 serverNbTab7Tree1=ttk.Treeview(serverNbTab7,show='headings',height=4, )
-serverNbTab7Tree1.grid(row=3,column=0,padx=5, pady=5, columnspan=2)
+serverNbTab7Tree1.grid(row=3,column=0,padx=5, pady=5, columnspan=2, sticky='w')
 serverNbTab7Tree1['columns'] = ('Name','Desc','Value','ValueInUse',)
 serverNbTab7Tree1['displaycolumns'] = ('Name','Desc','Value','ValueInUse',)
 serverNbTab7Tree1.heading("Name", text="NAME")
-serverNbTab7Tree1.column("Name", minwidth=0,width=145)
+serverNbTab7Tree1.column("Name", minwidth=0,width=245)
 serverNbTab7Tree1.heading("Desc", text="DESC")
-serverNbTab7Tree1.column("Desc", minwidth=0,width=250)
+serverNbTab7Tree1.column("Desc", minwidth=0,width=255)
 serverNbTab7Tree1.heading("Value", text="VALUE")
-serverNbTab7Tree1.column("Value", minwidth=0,width=145)
+serverNbTab7Tree1.column("Value", minwidth=0,width=75)
 serverNbTab7Tree1.heading("ValueInUse", text="VINUSE")
-serverNbTab7Tree1.column("ValueInUse", minwidth=0,width=145)
+serverNbTab7Tree1.column("ValueInUse", minwidth=0,width=75)
 
 #--#Databases Tab
 #--Databases
@@ -1650,12 +1694,12 @@ serverNbTab8Tree1.heading("Owner", text="OWNER")
 serverNbTab8Tree1.column("Owner", minwidth=0,width=50,anchor="w")
 serverNbTab8Tree1.heading("Creation", text="CREATION")
 serverNbTab8Tree1.column("Creation", minwidth=0,width=75,anchor="w")
-serverNbTab8Tree1.heading("Compat", text="COMPAT")
-serverNbTab8Tree1.column("Compat", minwidth=0,width=70,anchor="w")
+serverNbTab8Tree1.heading("Compat", text="COM")
+serverNbTab8Tree1.column("Compat", minwidth=0,width=35,anchor="w")
 serverNbTab8Tree1.heading("Status", text="STATUS")
-serverNbTab8Tree1.column("Status", minwidth=0,width=70,anchor="w")
-serverNbTab8Tree1.heading("Recovery", text="RECOVERY")
-serverNbTab8Tree1.column("Recovery", minwidth=0,width=70,anchor="w")
+serverNbTab8Tree1.column("Status", minwidth=0,width=60,anchor="w")
+serverNbTab8Tree1.heading("Recovery", text="RECOVER")
+serverNbTab8Tree1.column("Recovery", minwidth=0,width=60,anchor="w")
 serverNbTab8Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab8Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab8Tree1.heading("LRWait", text="LRWAIT")
