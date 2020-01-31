@@ -21,3 +21,17 @@ build/dbaClef/out00-Tree.toc
 build/dbaClef/out01-Tree.toc
 build/dbaClef/warndbaClef.txt
 build/dbaClef/xref-dbaClef.html
+*.pyc
+build/moldmydb/base_library.zip
+build/moldmydb/moldmydb.exe.manifest
+build/moldmydb/out00-Analysis.toc
+build/moldmydb/out00-EXE.toc
+build/moldmydb/out00-PKG.pkg
+build/moldmydb/out00-PKG.toc
+build/moldmydb/out00-PYZ.pyz
+build/moldmydb/out00-PYZ.toc
+build/moldmydb/out00-Tree.toc
+build/moldmydb/out01-Tree.toc
+barchart.png
+build/moldmydb/warnmoldmydb.txt
+build/moldmydb/xref-moldmydb.html
