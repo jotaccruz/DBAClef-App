@@ -250,7 +250,15 @@ def get_dbadmin_command(mode):
         except IndexError:
             pass
         
-    sqlexec="CREATE DATABASE DBAdmin;"
+    sqlexec="IF  NOT EXISTS (\
+    	SELECT name \
+		FROM sys.databases \
+		WHERE name = N'DBAdmin'\
+        )\
+        BEGIN\
+        CREATE DATABASE DBAdmin;\
+        ALTER DATABASE DBAdmin SET RECOVERY SIMPLE;\
+        END;"
     sqlexec1="use DBAdmin; exec sp_changedbowner 'sa';"
     try:
         mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
@@ -397,6 +405,7 @@ def get_mail_command(mode):
         mailButton.config(state=NORMAL)
         error_handler("Error","DB Mail config error")
 
+#Alerts
 def get_alerts_command(mode):
     if (mode == 1):
         selected_row = {
@@ -424,6 +433,7 @@ def get_alerts_command(mode):
         AlertsButton.config(state=NORMAL)
         error_handler("Error","Alerts config error")
 
+#--sa owner
 def get_sa_command(mode):
     if (mode == 1):
         selected_row = {
@@ -452,7 +462,8 @@ def get_sa_command(mode):
         error_handler("Error","DB Owner sa config error")
 
 
-
+#Remote Admin
+#Backup
 def get_genchk_command(mode):
     if (mode == 1):
         selected_row = {
@@ -480,8 +491,56 @@ def get_genchk_command(mode):
         genchkButton.config(state=NORMAL)
         error_handler("Error","Configurations error")
 
+#IFI Testing
+def get_ifitest_command(mode):
+    if (mode == 1):
+        selected_row = {
+                "Server": "127.0.0.1",
+                "Ip": "127.0.0.1",
+                "Port": e2.get(),
+                "User": SQLUser.get(),
+                "Pwd": SQLPass.get()
+                }
+    else:
+        try:
+            selected_row=InventoryTree.set(InventoryTree.selection())
+            selected_row.update({"User": SQLUser.get(),"Pwd": SQLPass.get()})
+        except IndexError:
+            pass
 
-#---
+    #try:
+    sqlexec = readFileFromOS(getFileUrl("ifiButton_0.sql","scripts"))
+    sqlexec0 = readFileFromOS(getFileUrl("ifiButton_1.sql","scripts"))
+
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0)
+
+    sqlexec1 = readFileFromOS(getFileUrl("ifiButton_2.sql","scripts"))
+        
+    sqlexec2 = readFileFromOS(getFileUrl("ifiButton_3.sql","scripts"))
+    
+    sqlexec3 = readFileFromOS(getFileUrl("ifiButton_4.sql","scripts"))
+    
+        
+    for row in mssqldetailsp(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
+                           sqlexec2,sqlexec3):
+        if (row[1]==0):
+            serverNbTab7Tree3.insert("", END, values=(row[0], ),tags = ('need'))
+        else:
+            serverNbTab7Tree3.insert("", END, values=(row[0], ),tags = ('good'))
+    
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+    
+    serverNbTab7Tree3.tag_configure('need', background='#f86d7e')
+    #except:
+    #    ifiButton.config(state=NORMAL)
+    #    error_handler("Error","IFI testing failed")
+    
+#---Main
 def get_detail_command(mode):
     if (mode == 1):
         selected_row = {
@@ -994,6 +1053,7 @@ def get_detail_command(mode):
             serverNbTab7Tree3.insert("", END, values=(rows[0], ),tags = ('need'))
         else:
             serverNbTab7Tree3.insert("", END, values=(rows[0], ),tags = ('good'))
+            ifiButton.config(state=NORMAL)
    
     serverNbTab7Tree3.tag_configure('need', background='#f86d7e')
     #serverNbTab7Tree3.tag_configure('good', background='#aef38c')
@@ -1635,7 +1695,7 @@ GenCheckLabel=ttk.Label(serverNbTab7,text="RemAdmin/BkpCompress/Adhoc/MaxDop")
 GenCheckLabel.grid(row=0,column=0,padx=5, pady=5, sticky='w',)
 
 serverNbTab7Tree2=ttk.Treeview(serverNbTab7,show='headings',height=4, )
-serverNbTab7Tree2.grid(row=1,column=0,padx=5, pady=5, sticky='w')
+serverNbTab7Tree2.grid(row=1,column=0,padx=5, pady=5, sticky='w', rowspan=2)
 serverNbTab7Tree2['columns'] = ('Name','Desc','Status',)
 serverNbTab7Tree2['displaycolumns'] = ('Name','Desc','Status',)
 serverNbTab7Tree2.heading("Name", text="NAME")
@@ -1646,7 +1706,7 @@ serverNbTab7Tree2.heading("Status", text="STATUS")
 serverNbTab7Tree2.column("Status", minwidth=0,width=55)
 
 #--IFI Status
-serverNbTab7Tree3=ttk.Treeview(serverNbTab7,show='headings',height=1, )
+serverNbTab7Tree3=ttk.Treeview(serverNbTab7,show='headings',height=2, )
 serverNbTab7Tree3.grid(row=1,column=1,padx=5, pady=5, sticky='n')
 serverNbTab7Tree3['columns'] = ('IFIStatus',)
 serverNbTab7Tree3['displaycolumns'] = ('IFIStatus',)
@@ -1654,19 +1714,19 @@ serverNbTab7Tree3.heading("IFIStatus", text="IFI Status")
 serverNbTab7Tree3.column("IFIStatus", minwidth=0,width=145, anchor="center")
 
 genchkButton = ttk.Button(serverNbTab7, text='Set Configurations', underline = 0, command= lambda: get_genchk_command(ConnMode.get()))
-genchkButton.grid(row=2, column=1, sticky="w", padx=5, pady=5,)
+genchkButton.grid(row=4, column=1, sticky="w", padx=5, pady=5,)
 genchkButton.config(state=DISABLED)
 
 ifiButton = ttk.Button(serverNbTab7, text='Test IFI', underline = 0, command= lambda: get_ifitest_command(ConnMode.get()))
-ifiButton.grid(row=3, column=1, sticky="w", padx=5, pady=5,)
+ifiButton.grid(row=2, column=1, sticky="e", padx=5, pady=5,)
 ifiButton.config(state=DISABLED)
 
 #--PENDING CONFIGURATIONS.
 GenCheckLabel=ttk.Label(serverNbTab7,text="Pending Configurations")
-GenCheckLabel.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+GenCheckLabel.grid(row=3,column=0,padx=5, pady=5, sticky='w')
 
 serverNbTab7Tree1=ttk.Treeview(serverNbTab7,show='headings',height=4, )
-serverNbTab7Tree1.grid(row=3,column=0,padx=5, pady=5, columnspan=2, sticky='w')
+serverNbTab7Tree1.grid(row=4,column=0,padx=5, pady=5, columnspan=2, sticky='w')
 serverNbTab7Tree1['columns'] = ('Name','Desc','Value','ValueInUse',)
 serverNbTab7Tree1['displaycolumns'] = ('Name','Desc','Value','ValueInUse',)
 serverNbTab7Tree1.heading("Name", text="NAME")
