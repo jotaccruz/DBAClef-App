@@ -47,10 +47,15 @@
 # --add-data "./scripts/spButton_0.sql;scripts"
 # --add-data "./scripts/spButton_1.sql;scripts"
 # --add-data "./scripts/StandardLoginsButton_0.sql;scripts"
-# --add-data "./scripts/genchkButton_0.sql;scripts"
 # --add-data "./scripts/saButton_0.sql;scripts"
 # --add-data "./scripts/AlertsButton_0.sql;scripts"
 # --add-data "./scripts/mailButton_0.sql;scripts"
+# --add-data "./scripts/genchkButton_0.sql;scripts"
+# --add-data "./scripts/ifiButton_0.sql;scripts"
+# --add-data "./scripts/ifiButton_1.sql;scripts"
+# --add-data "./scripts/ifiButton_2.sql;scripts"
+# --add-data "./scripts/ifiButton_3.sql;scripts"
+# --add-data "./scripts/ifiButton_4.sql;scripts"
 
 # --i ./files/moldmydb.ico moldmydb.py
  
@@ -1714,7 +1719,7 @@ serverNbTab7Tree3.heading("IFIStatus", text="IFI Status")
 serverNbTab7Tree3.column("IFIStatus", minwidth=0,width=145, anchor="center")
 
 genchkButton = ttk.Button(serverNbTab7, text='Set Configurations', underline = 0, command= lambda: get_genchk_command(ConnMode.get()))
-genchkButton.grid(row=4, column=1, sticky="w", padx=5, pady=5,)
+genchkButton.grid(row=4, column=1, sticky="n,e", padx=5, pady=5,)
 genchkButton.config(state=DISABLED)
 
 ifiButton = ttk.Button(serverNbTab7, text='Test IFI', underline = 0, command= lambda: get_ifitest_command(ConnMode.get()))
@@ -1871,7 +1876,7 @@ labelsp=ttk.Label(serverNbTab9,text="sp_whoisactive")
 labelsp.grid(row=2,column=2,padx=5, pady=5, sticky='w')
 
 spButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_spwhoisactive_command(ConnMode.get()))
-spButton.grid(row=2, column=3, sticky="w", padx=5, pady=5,)
+spButton.grid(row=2, column=2, sticky="e,n", padx=5, pady=5,)
 spButton.config(state=DISABLED)
 
 serverNbTab9Tree3=ttk.Treeview(serverNbTab9,show='headings',height=1, )
