@@ -516,17 +516,20 @@ def get_ifitest_command(mode):
     #try:
     sqlexec = readFileFromOS(getFileUrl("ifiButton_0.sql","scripts"))
     sqlexec0 = readFileFromOS(getFileUrl("ifiButton_1.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("ifiButton_2.sql","scripts"))
 
     mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
     mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec0)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1)
 
-    sqlexec1 = readFileFromOS(getFileUrl("ifiButton_2.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("ifiButton_3.sql","scripts"))
         
-    sqlexec2 = readFileFromOS(getFileUrl("ifiButton_3.sql","scripts"))
+    sqlexec2 = readFileFromOS(getFileUrl("ifiButton_4.sql","scripts"))
     
-    sqlexec3 = readFileFromOS(getFileUrl("ifiButton_4.sql","scripts"))
+    sqlexec3 = readFileFromOS(getFileUrl("ifiButton_5.sql","scripts"))
     
         
     for row in mssqldetailsp(selected_row['Ip'],selected_row['Port'],"master",\
@@ -539,6 +542,8 @@ def get_ifitest_command(mode):
     
     mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0)
     
     serverNbTab7Tree3.tag_configure('need', background='#f86d7e')
     #except:
@@ -1235,6 +1240,31 @@ def get_detail_command(mode):
     serverNbTab9Tree4.tag_configure('need', background='#f86d7e')
 
 
+#--Other options tab
+#Trace default
+    sqlexec0 = readFileFromOS(getFileUrl("serverNbTab11Tree1_0.sql","scripts"))
+    
+    sqlexec = readFileFromOS(getFileUrl("serverNbTab11Tree1_1.sql","scripts"))
+    
+    for i in serverNbTab11Tree1.get_children():
+        serverNbTab11Tree1.delete(i)
+    rows=0    
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",
+                           selected_row['User'],selected_row['Pwd'],sqlexec0,
+                           sqlexec):
+        if (row[1]=='Missing'):
+            serverNbTab11Tree1.insert("", END, values=(row[0],row[1],row[2],),tags = ('need'))
+        else:
+            serverNbTab11Tree1.insert("", END, values=(row[0],row[1],row[2],),tags = ('good'))
+        rows=1
+    
+    if rows==0:
+        serverNbTab11Tree1.insert("", END, values=("Missing","",),tags = ('need'))
+        
+    serverNbTab11Tree1.tag_configure('need', background='#f86d7e')
+
+
+
 ####### main ------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1600,7 +1630,7 @@ serverNbTab5Tree2.heading("FailSafeOperator", text="FAIL SAFE OPERATOR")
 serverNbTab5Tree2.column("FailSafeOperator", minwidth=0,width=175)
 
 AlertsButton = ttk.Button(serverNbTab5, text='Install', underline = 0, command= lambda: get_alerts_command(ConnMode.get()))
-AlertsButton.grid(row=0, column=3, sticky="w", padx=5, pady=5,)
+AlertsButton.grid(row=0, column=3, sticky="n,w", padx=5, pady=5,)
 AlertsButton.config(state=DISABLED)
 
 #Alerts
@@ -1655,7 +1685,7 @@ serverNbTab6Tree4.heading("MailProfile", text="Mail Profile")
 serverNbTab6Tree4.column("MailProfile", minwidth=0,width=145,anchor="center")
 
 mailButton = ttk.Button(serverNbTab6, text='Install', underline = 0, command= lambda: get_mail_command(ConnMode.get()))
-mailButton.grid(row=0, column=4, sticky="w", padx=5, pady=5,)
+mailButton.grid(row=0, column=4, sticky="w,n", padx=5, pady=5,)
 mailButton.config(state=DISABLED)
 
 #--Mail Account
@@ -1719,12 +1749,12 @@ serverNbTab7Tree3.heading("IFIStatus", text="IFI Status")
 serverNbTab7Tree3.column("IFIStatus", minwidth=0,width=145, anchor="center")
 
 genchkButton = ttk.Button(serverNbTab7, text='Set Configurations', underline = 0, command= lambda: get_genchk_command(ConnMode.get()))
-genchkButton.grid(row=4, column=1, sticky="n,e", padx=5, pady=5,)
+genchkButton.grid(row=0, column=0, sticky="n,e", padx=5, pady=5,)
 genchkButton.config(state=DISABLED)
 
-ifiButton = ttk.Button(serverNbTab7, text='Test IFI', underline = 0, command= lambda: get_ifitest_command(ConnMode.get()))
-ifiButton.grid(row=2, column=1, sticky="e", padx=5, pady=5,)
-ifiButton.config(state=DISABLED)
+#ifiButton = ttk.Button(serverNbTab7, text='Test IFI', underline = 0, command= lambda: get_ifitest_command(ConnMode.get()))
+#ifiButton.grid(row=2, column=1, sticky="e", padx=5, pady=5,)
+#ifiButton.config(state=DISABLED)
 
 #--PENDING CONFIGURATIONS.
 GenCheckLabel=ttk.Label(serverNbTab7,text="Pending Configurations")
@@ -1910,6 +1940,19 @@ serverNbTab9Tree4.heading("Creation", text="CREATION")
 serverNbTab9Tree4.column("Creation", minwidth=0,width=145, )
 serverNbTab9Tree4.heading("Db", text="DB")
 serverNbTab9Tree4.column("Db", minwidth=0,width=145, )
+
+#--Default trace
+serverNbTab11Tree1=ttk.Treeview(serverNbTab11,show='headings',height=3, )
+serverNbTab11Tree1.grid(row=5,column=0,padx=5, pady=5,columnspan=4,sticky='w' )
+serverNbTab11Tree1['columns'] = ('Id','Property','Value',)
+serverNbTab11Tree1['displaycolumns'] = ('Id','Property','Value',)
+serverNbTab11Tree1.heading("Id", text="ID")
+serverNbTab11Tree1.column("Id", minwidth=0,width=25, )
+serverNbTab11Tree1.heading("Property", text="PROPERTY")
+serverNbTab11Tree1.column("Property", minwidth=0,width=100, )
+serverNbTab11Tree1.heading("Value", text="VALUE")
+serverNbTab11Tree1.column("Value", minwidth=0,width=600, )
+
 
 #Bottoms
 #LoginsButton = ttk.Button(serverNbTab9, text='Install', underline = 0, command= lambda: get_logins_command(ConnMode.get()))

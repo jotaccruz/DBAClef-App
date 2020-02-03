@@ -1,7 +1,7 @@
 IF EXISTS (
-  SELECT * 
+	SELECT * 
     FROM INFORMATION_SCHEMA.ROUTINES 
-   WHERE SPECIFIC_SCHEMA = N'dbo'
-     AND SPECIFIC_NAME = N'ifi_testing' 
+	WHERE SPECIFIC_SCHEMA = N'dbo'
+	AND SPECIFIC_NAME = N'ifi_testing' 
 )
    DROP PROCEDURE dbo.ifi_testing;

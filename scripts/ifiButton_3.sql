@@ -1,18 +1,11 @@
-CREATE TABLE #ifiTest (message nvarchar(150),flag int);
-CREATE TABLE #times (startdate datetime,enddate datetime);
-INSERT INTO #times (startdate) VALUES (getdate());
-EXECUTE master.dbo.ifi_testing;
-UPDATE #times SET enddate=getdate();
-
-IF (SELECT DATEDIFF(SECOND,startdate,enddate) FROM #times) >50
+CREATE PROCEDURE dbo.ifi_testing
+	@p1 int = 0, 
+	@p2 int = 0
+AS
 BEGIN
-	INSERT INTO #ifiTest
-	SELECT 'IFI is not working as expected. secpol.msc',0
+	ALTER DATABASE ifitesting MODIFY FILE ( NAME = N'ifitesting', SIZE = 5242880KB );
 END
-ELSE
-BEGIN
-	INSERT INTO #ifiTest
-	SELECT 'IFI is already working',1
-END
-
-drop database [ifitesting];
+---- =============================================
+---- Example to execute the stored procedure
+---- =============================================
+--EXECUTE dbo.ifi_testing 1, 2;
