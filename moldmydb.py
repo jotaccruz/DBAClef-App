@@ -29,9 +29,11 @@ from moldmydbWeb import *
 import webbrowser
 import moldmydbSQLFiles
 from moldmydbSQLFiles import *
-import moldmydbReport
-from moldmydbReport import *
-from fpdf import FPDF
+#import moldmydbReport
+#from moldmydbReport import *
+#from fpdf import FPDF
+import moldmydbExcel
+from moldmydbExcel import *
 from datetime import date
 
 window=Tk()
@@ -109,13 +111,14 @@ def resource_path(relative_path):
 
 def About():
     today = date.today().strftime("%m.%d.%y")
-    pdf = FPDF()
+    #pdf = FPDF()
     tkinter.messagebox.showinfo(title="moldmydb", message="Telus International\
     - MoldMydb v 1.0",)
     for i in serverNbTab1Tree1.get_children():
         server=(serverNbTab1Tree1.item(i)["values"][2])
-    pdffinal=ReportAssessment(server,StatusTree4,pdf)
-    pdffinal.output('Assessment-'+server+'-'+today+'.pdf', 'F')
+    excelf=xlsxGen('Service',StatusTree4)
+    excelf.save(server+'-'+today+'.xlsx')
+    #pdffinal.output('Assessment-'+server+'-'+today+'.pdf', 'F')
 
 def hello():
     webbrowser.open("https://docs.google.com/document/d/17QOtcPCKPlMlFKxTCVttl\

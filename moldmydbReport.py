@@ -36,7 +36,7 @@ def ReportAssessment(servername,treeview,pdf):
     #savefig('barchart.png')
 
     #pdf = FPDF()
-    pdf.add_page()
+    pdf.add_page(orientation='L',)
     pdf.set_xy(0, 0)
     pdf.set_font('arial', 'B', 11)
     pdf.cell(60)
@@ -53,12 +53,16 @@ def ReportAssessment(servername,treeview,pdf):
     pdf.cell(40, 5, 'Windows Name', 1, 0, 'C')
     pdf.cell(40, 5, 'Net Bios Name', 1, 0, 'C')
     pdf.cell(40, 5, 'Instance Name', 1, 2, 'C')
-    pdf.cell(90, 5, " ", 0, 2, 'C')
     pdf.cell(-150)
+    pdf.cell(90, 5, " ", 0, 2, 'C')
 
-    pdf.cell(40, 5, 'Missing Updates:', 0, 2, 'C')
+    pdf.cell(40, 5, 'Missing Updates:', 0, 2, 'L')
     #pdf.line(10, 30, 200, 30)
     #pdf.cell(90, 5, " ", 0, 2, 'C')
+    columnslist=tree['columns']
+    print (type(columnslist))
+    #for columns in tree['columns']:
+
     pdf.cell(40, 5, 'Version', 1, 0, 'C')
     pdf.cell(30, 5, 'EOS', 1, 0, 'C')
     pdf.cell(40, 5, 'Name', 1, 0, 'C')
