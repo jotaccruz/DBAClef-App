@@ -2,7 +2,7 @@ IF (SELECT CAST(SERVERPROPERTY('Edition') AS VARCHAR(30))) NOT LIKE 'Express Edi
 BEGIN
 	IF (SELECT @@version) NOT LIKE 'Microsoft SQL Server 2005%'
 	BEGIN
-		SELECT 
+		SELECT 'SQL Agent' as Component, 
 		CASE WHEN status_desc = 'Running' 
 		THEN 'Running.' 
 		ELSE 'Stopped.' 
@@ -17,6 +17,5 @@ BEGIN
 END
 ELSE 
 BEGIN 
-	SELECT 'Express Edition' SQLAgentStarted 
+	SELECT 'SQL Agent' as Component, 'Express Edition' SQLAgentStarted 
 END;
-

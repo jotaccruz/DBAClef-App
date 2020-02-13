@@ -1,6 +1,6 @@
 IF EXISTS (SELECT SQLAgentMailEnabled FROM #SQLAgentMailEnabled) 
 BEGIN 
-	SELECT 
+	SELECT 'SQL Agent Mail Enabled' as Component,
 	CASE WHEN Datos=1 
 	THEN 'Enabled' 
 	ELSE 'Disabled' 
@@ -9,5 +9,5 @@ BEGIN
 END 
 ELSE 
 BEGIN 
-	SELECT 'Express Edition' AS SQLAgentMailEnabled 
+	SELECT 'SQL Agent Mail Enabled' as Component, 'Express Edition' AS SQLAgentMailEnabled 
 END;
