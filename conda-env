@@ -1,8 +1,11 @@
 #Setting up the environment:
-#--conda create -n moldmydb python=3.5.6 (Python Engine version)
-#--conda activate moldmydb
-#--conda install spyder (IDE)
-#--conda install pyodbc
-#--conda install mysql-connector-python
-#--conda install -c primer wmi
-#--conda install -c conda-forge pyinstaller
+conda create -n moldmydb python=3.5.6 (Python Engine version)
+conda activate moldmydb
+conda install spyder (IDE optional)
+conda install pyodbc
+conda install mysql-connector-python
+conda install -c primer wmi
+conda install -c conda-forge pyinstaller
+conda install -c anaconda openpyxl
+#conda install pandas
+#python setup.py install / https://github.com/reingart/pyfpdf/releases

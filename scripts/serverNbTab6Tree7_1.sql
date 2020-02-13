@@ -1,10 +1,9 @@
 IF EXISTS (SELECT SQLAgentMailProfile FROM #SQLAgentMailProfile) 
 BEGIN 
-	SELECT ISNULL(dat,'Missing') [profile] 
+	SELECT 'SQL Agent Mail Profile' Component , ISNULL(dat,'Missing') [profile] 
 	FROM #SQLAgentMailProfile 
 END 
 ELSE 
 BEGIN 
-	SELECT 'Express Edition' 
-	SQLAgentMailProfileEnabled 
+	SELECT 'SQL Agent Mail Profile' Component, 'Express Edition' [profile]
 END;

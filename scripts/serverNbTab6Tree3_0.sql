@@ -1,4 +1,4 @@
-SELECT 
+SELECT 'Database Mail XPs' as Component,
 CASE WHEN CAST(value_in_use AS INT)=0 
 THEN 'Disabled' 
 ELSE 'Enabled' 
