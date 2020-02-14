@@ -126,12 +126,17 @@ def About(global_treeview_dic):
     global_treeview_dic)
     excelf=xlsxGen(excelf,'Page File',serverNbTab3Tree1,'serverNbTab3Tree1',\
     global_treeview_dic)
-    #excelf=xlsxGen(excelf,'Default Paths',serverNbTab4Tree1)
-    #excelf=xlsxGen(excelf,'DB Mail',serverNbTab6Tree1)
-    #excelf=xlsxGen(excelf,'Alerts',serverNbTab7Tree3)
-    #excelf=xlsxGen(excelf,'Databases',serverNbTab8Tree1)
+    excelf=xlsxGen(excelf,'Default Paths',serverNbTab4Tree1,\
+    'serverNbTab4Tree1',global_treeview_dic)
+    excelf=xlsxGen(excelf,'DB Mail',serverNbTab6Tree1,'serverNbTab6Tree1',\
+    global_treeview_dic)
+    excelf=xlsxGen(excelf,'Alerts',serverNbTab5Tree3,'serverNbTab5Tree3',\
+    global_treeview_dic)
+    excelf=xlsxGen(excelf,'Databases',serverNbTab8Tree1,'serverNbTab8Tree1',\
+    global_treeview_dic)
     #excelf=xlsxGen(excelf,'Transaction Log',serverNbTab12Tree1)
-    #excelf=xlsxGen(excelf,'Sys Admin',serverNbTab10Tree1)
+    excelf=xlsxGen(excelf,'Sys Admin',serverNbTab10Tree1,'serverNbTab10Tree1',\
+    global_treeview_dic)
     #excelf=xlsxGen(excelf,'General Check',serverNbTab11Tree1)
     #excelf=xlsxGen(excelf,'DBA Tools',serverNbTab9Tree1)
 
@@ -797,12 +802,18 @@ def get_detail_command(mode):
 
     for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master"\
     ,selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
-        if (row[2]==1):
-            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
-                                     tags = ('need',))
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab4Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[4]]
+            continue
+
+        if (row[3]==1):
+            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[4]), tags = ('need',))
         else:
-            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
-                                     tags = ('good',))
+            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[4]), tags = ('good',))
 
     mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
@@ -841,11 +852,16 @@ def get_detail_command(mode):
     rows=0
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]),tags = \
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab5Tree3']=[str(row[0]+4),\
+            row[2],row[3],row[4]]
+            continue
+
+        serverNbTab5Tree3.insert("", END, values=(row[0],row[2],row[3],row[4]),tags = \
         ('good'))
         rows=rows+1
     if rows==0 or rows<13 :
-        serverNbTab5Tree3.insert("", END, values=("Missing","","",),tags = \
+        serverNbTab5Tree3.insert("", END, values=("","Missing","","",),tags = \
         ('need'))
         AlertsButton.config(state=NORMAL)
 
@@ -877,156 +893,165 @@ def get_detail_command(mode):
 #------------------------------------------------------------------------------
 
 #SQL Server Agent enabled
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree1_0.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree1_0.sql","scripts"))
+    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree1_1.sql","scripts"))
 
     for i in serverNbTab6Tree1.get_children():
         serverNbTab6Tree1.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[1]=='Disabled'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
+                           sqlexec2):
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab6Tree1']=[str(row[0]+4),\
+            row[1],row[2]]
+            continue
+        if ('Mail' in row[1]) and (row[2]=='Disabled' or row[2]=='Missing'):
+            mailButton.config(state=NORMAL)
+        if (row[2]=='Disabled' or row[2]=='Missing' or row[2]==\
+        'Express Edition'):
+            serverNbTab6Tree1.insert("", END, values=(row[0],row[1],row[2]), \
             tags = ('need'))
         else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+            serverNbTab6Tree1.insert("", END, values=(row[0],row[1],row[2]), \
             tags = ('good'))
 
-    #serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
+    serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree1.tag_configure('good', background='#aef38c')
 
 #SQL Server Agent status
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree2_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree2_0.sql","scripts"))
 
     #for i in serverNbTab6Tree2.get_children():
     #    serverNbTab6Tree2.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[1]=='Running.'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('good'))
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('need'))
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    if (row[1]=='Running.'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('good'))
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('need'))
 
     #serverNbTab6Tree2.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree2.tag_configure('good', background='#aef38c')
 
 #SQL Database Mail is enabled
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree3_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree3_0.sql","scripts"))
 
     #for i in serverNbTab6Tree3.get_children():
     #    serverNbTab6Tree3.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[1]=='Disabled'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('need'))
-            mailButton.config(state=NORMAL)
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('good'))
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    if (row[1]=='Disabled'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('need'))
+    #        mailButton.config(state=NORMAL)
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('good'))
 
     #serverNbTab6Tree3.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree3.tag_configure('good', background='#aef38c')
 
 #@Mail Profile
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree4_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree4_0.sql","scripts"))
 
     #for i in serverNbTab6Tree4.get_children():
     #    serverNbTab6Tree4.delete(i)
 
-    rows=0
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags=('good'))
-        rows=1
+    #rows=0
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags=('good'))
+    #    rows=1
 
-    if rows==0:
-        serverNbTab6Tree1.insert("", END, values=("Mail Profile",\
-        "Missing"), tags = ('need'))
-        mailButton.config(state=NORMAL)
+    #if rows==0:
+    #    serverNbTab6Tree1.insert("", END, values=("Mail Profile",\
+    #    "Missing"), tags = ('need'))
+    #    mailButton.config(state=NORMAL)
 
     #serverNbTab6Tree4.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree4.tag_configure('good', background='#aef38c')
 
 #Mail Account
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree5_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree5_0.sql","scripts"))
 
     #for i in serverNbTab6Tree5.get_children():
     #    serverNbTab6Tree5.delete(i)
 
-    rows=0
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
-        rows=1
+    #rows=0
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
+    #    rows=1
 
-    if rows==0:
-        serverNbTab6Tree1.insert("", END, values=("Mail Account","Missing"), tags = ('need'))
-        mailButton.config(state=NORMAL)
+    #if rows==0:
+    #    serverNbTab6Tree1.insert("", END, values=("Mail Account","Missing"), tags = ('need'))
+    #    mailButton.config(state=NORMAL)
 
     #serverNbTab6Tree5.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree5.tag_configure('good', background='#aef38c')
 
 #SQL Server Agent is enabled to use Database Mail
-    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree6_0.sql","scripts"))
+    #sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree6_0.sql","scripts"))
 
-    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree6_1.sql","scripts"))
+    #sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree6_1.sql","scripts"))
 
     #for i in serverNbTab6Tree6.get_children():
     #    serverNbTab6Tree6.delete(i)
 
-    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
-                           sqlexec2):
-        if (row[1]=='Enabled'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
-            mailButton.config(state=NORMAL)
+    #for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec1,\
+    #                       sqlexec2):
+    #    if (row[1]=='Enabled'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
+    #        mailButton.config(state=NORMAL)
 
     #serverNbTab6Tree6.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree6.tag_configure('good', background='#aef38c')
 
 #SQL Server Agent is enabled to use Database Mail and Mail Profile is assigned
-    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree7_0.sql","scripts"))
+    #sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree7_0.sql","scripts"))
 
-    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree7_1.sql","scripts"))
+    #sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree7_1.sql","scripts"))
 
     #for i in serverNbTab6Tree7.get_children():
     #    serverNbTab6Tree7.delete(i)
 
-    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
-    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
+    #for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    #"master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
         #print (row[0])
-        if (row[1]=='Missing' or row[1]=='Express Edition'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
-            mailButton.config(state=NORMAL)
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
+    #    if (row[1]=='Missing' or row[1]=='Express Edition'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
+    #        mailButton.config(state=NORMAL)
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
 
     #serverNbTab6Tree7.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree7.tag_configure('good', background='#aef38c')
 
 #get email retry interval configuration value
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree8_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree8_0.sql","scripts"))
 
     #for i in serverNbTab6Tree8.get_children():
     #    serverNbTab6Tree8.delete(i)
 
-    rows=0
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]),tags = ('good'))
-        rows=1
+    #rows=0
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    serverNbTab6Tree1.insert("", END, values=(row[0],row[1]),tags = ('good'))
+    #    rows=1
 
-    if rows==0:
-        serverNbTab6Tree1.insert("", END, values=("","Missing",),tags = \
-        ('need'))
+    #if rows==0:
+    #    serverNbTab6Tree1.insert("", END, values=("","Missing",),tags = \
+    #    ('need'))
 
-    serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
+    #serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree8.tag_configure('good', background='#aef38c')
 
 #General Check
@@ -1038,8 +1063,14 @@ def get_detail_command(mode):
 
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab7Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],)\
-        ,tags = ('need'))
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab7Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[3],row[4]]
+            continue
+
+        serverNbTab7Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],\
+        row[4]),tags = ('need'))
+
     serverNbTab7Tree1.tag_configure('need', background='#f86d7e')
 
 #--REMOTE ADMIN
@@ -1087,20 +1118,28 @@ def get_detail_command(mode):
 
 #Databases
 #--DATABASES
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab8Tree1_0.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab8Tree1_0.sql","scripts"))
+    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab8Tree1_1.sql","scripts"))
 
     for i in serverNbTab8Tree1.get_children():
         serverNbTab8Tree1.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[3]!='sa' or row[2]=='Take Care'):
-            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab8Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],\
+            row[10],row[11]]
+            continue
+
+        if (row[5]!='sa' or row[4]=='Alert'):
+            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],\
+            row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],),tags = ('need'))
             saButton.config(state=NORMAL)
         else:
-            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('good'))
+            serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],\
+            row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],),tags = ('good'))
 
     serverNbTab8Tree1.tag_configure('need', background='#f86d7e')
 
@@ -1164,12 +1203,17 @@ def get_detail_command(mode):
 
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[0]=='BUILTIN\\Users' or row[0]=='NT AUTHORITY\\SYSTEM'):
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab10Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[3],row[4],row[5]]
+            continue
+
+        if (row[1]=='BUILTIN\\Users' or row[1]=='NT AUTHORITY\\SYSTEM'):
             serverNbTab10Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],),tags = ('need'))
+            row[3],row[4],row[5],),tags = ('need'))
         else:
             serverNbTab10Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],),tags = ('good'))
+            row[3],row[4],row[5],),tags = ('good'))
 
     serverNbTab10Tree1.tag_configure('need', background='#f86d7e')
 
@@ -1672,8 +1716,10 @@ serverNbTab3Tree1.configure(yscrollcommand=scrollbar_vertical.set)
 #Defaulth Paths Tab
 serverNbTab4Tree1=ttk.Treeview(serverNbTab4,show='headings',height=12,)
 serverNbTab4Tree1.grid(row=0,column=0,padx=5, pady=5)
-serverNbTab4Tree1['columns'] = ('Type', 'Location','Restart')
+serverNbTab4Tree1['columns'] = ('No','Type', 'Location','Restart')
 serverNbTab4Tree1['displaycolumns'] = ('Type', 'Location','Restart')
+serverNbTab4Tree1.heading("No", text="No")
+serverNbTab4Tree1.column("No", minwidth=0,width=100)
 serverNbTab4Tree1.heading("Type", text="TYPE")
 serverNbTab4Tree1.column("Type", minwidth=0,width=100)
 serverNbTab4Tree1.heading("Location", text="LOCATION")
@@ -1684,8 +1730,10 @@ serverNbTab4Tree1.column("Restart", minwidth=0,width=75)
 #DBMail and Alerts Tab
 serverNbTab6Tree1=ttk.Treeview(serverNbTab5,show='headings',height=12, )
 serverNbTab6Tree1.grid(row=0,column=0,padx=5, pady=5, sticky='n', rowspan=3)
-serverNbTab6Tree1['columns'] = ('Component','Status')
+serverNbTab6Tree1['columns'] = ('No','Component','Status')
 serverNbTab6Tree1['displaycolumns'] = ('Component','Status')
+serverNbTab6Tree1.heading("No", text="No")
+serverNbTab6Tree1.column("No", minwidth=0,width=5,anchor="w")
 serverNbTab6Tree1.heading("Component", text="Component")
 serverNbTab6Tree1.column("Component", minwidth=0,width=145,anchor="w")
 serverNbTab6Tree1.heading("Status", text="Status")
@@ -1717,8 +1765,10 @@ serverNbTab5Tree2.column("FailSafeOperator", minwidth=0,width=90,anchor='center'
 #Alerts
 serverNbTab5Tree3=ttk.Treeview(serverNbTab5,show='headings',height=9, )
 serverNbTab5Tree3.grid(row=1,column=1,padx=5, pady=5,sticky="w",rowspan=2)
-serverNbTab5Tree3['columns'] = ('Name', 'Severity','Enabled',)
+serverNbTab5Tree3['columns'] = ('No','Name', 'Severity','Enabled',)
 serverNbTab5Tree3['displaycolumns'] = ('Name', 'Severity','Enabled',)
+serverNbTab5Tree3.heading("No", text="No")
+serverNbTab5Tree3.column("No", minwidth=0,width=5)
 serverNbTab5Tree3.heading("Name", text="ALERT")
 serverNbTab5Tree3.column("Name", minwidth=0,width=155)
 serverNbTab5Tree3.heading("Severity", text="SEVERITY")
@@ -1852,8 +1902,10 @@ GenCheckLabel.grid(row=3,column=0,padx=5, pady=5, sticky='w')
 
 serverNbTab7Tree1=ttk.Treeview(serverNbTab7,show='headings',height=4, )
 serverNbTab7Tree1.grid(row=4,column=0,padx=5, pady=5, columnspan=2, sticky='w')
-serverNbTab7Tree1['columns'] = ('Name','Desc','Value','ValueInUse',)
+serverNbTab7Tree1['columns'] = ('No','Name','Desc','Value','ValueInUse',)
 serverNbTab7Tree1['displaycolumns'] = ('Name','Desc','Value','ValueInUse',)
+serverNbTab7Tree1.heading("No", text="No")
+serverNbTab7Tree1.column("No", minwidth=0,width=5)
 serverNbTab7Tree1.heading("Name", text="NAME")
 serverNbTab7Tree1.column("Name", minwidth=0,width=245)
 serverNbTab7Tree1.heading("Desc", text="DESC")
@@ -1871,16 +1923,20 @@ serverNbTab7Tree1.configure(yscrollcommand=scrollbar_vertical.set)
 #--Databases
 serverNbTab8Tree1=ttk.Treeview(serverNbTab8,show='headings',height=12, )
 serverNbTab8Tree1.grid(row=0,column=0,padx=5, pady=5, )
-serverNbTab8Tree1['columns'] = ('Id','Name','LastBackup','Owner','Creation',\
-'Compat','Status','Recovery','Verification','LRWait',)
-serverNbTab8Tree1['displaycolumns'] = ('Id','Name','LastBackup','Owner',\
+serverNbTab8Tree1['columns'] = ('No','Id','Name','Size','LastBackup','Owner',\
 'Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab8Tree1['displaycolumns'] = ('Id','Name','Size','LastBackup','Owner',\
+'Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab8Tree1.heading("No", text="No")
+serverNbTab8Tree1.column("No", minwidth=0,width=5,anchor="w")
 serverNbTab8Tree1.heading("Id", text="ID")
 serverNbTab8Tree1.column("Id", minwidth=0,width=25,anchor="w")
 serverNbTab8Tree1.heading("Name", text="NAME")
 serverNbTab8Tree1.column("Name", minwidth=0,width=160,anchor="w")
+serverNbTab8Tree1.heading("Size", text="SIZE")
+serverNbTab8Tree1.column("Size", minwidth=0,width=60,anchor="w")
 serverNbTab8Tree1.heading("LastBackup", text="LAST BKP")
-serverNbTab8Tree1.column("LastBackup", minwidth=0,width=80,anchor="w")
+serverNbTab8Tree1.column("LastBackup", minwidth=0,width=100,anchor="w")
 serverNbTab8Tree1.heading("Owner", text="OWNER")
 serverNbTab8Tree1.column("Owner", minwidth=0,width=50,anchor="w")
 serverNbTab8Tree1.heading("Creation", text="CREATION")
@@ -1894,7 +1950,7 @@ serverNbTab8Tree1.column("Recovery", minwidth=0,width=60,anchor="w")
 serverNbTab8Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab8Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab8Tree1.heading("LRWait", text="LRWAIT")
-serverNbTab8Tree1.column("LRWait", minwidth=0,width=80,anchor="w")
+serverNbTab8Tree1.column("LRWait", minwidth=0,width=75,anchor="w")
 scrollbar_vertical = ttk.Scrollbar(serverNbTab8, orient="vertical", \
                                    command=serverNbTab8Tree1.yview)
 scrollbar_vertical.grid(row=0, column=1, sticky="ens")
@@ -1944,8 +2000,10 @@ serverNbTab12Tree2.configure(yscrollcommand=scrollbar_vertical.set)
 #--Sysadmin members
 serverNbTab10Tree1=ttk.Treeview(serverNbTab10,show='headings',height=12, )
 serverNbTab10Tree1.grid(row=0,column=0,padx=5, pady=5, sticky='n')
-serverNbTab10Tree1['columns'] = ('Name','Type','Status','Creation','Db',)
+serverNbTab10Tree1['columns'] = ('No','Name','Type','Status','Creation','Db',)
 serverNbTab10Tree1['displaycolumns'] = ('Name','Type','Status','Creation','Db',)
+serverNbTab10Tree1.heading("No", text="No")
+serverNbTab10Tree1.column("No", minwidth=0,width=5, )
 serverNbTab10Tree1.heading("Name", text="NAME")
 serverNbTab10Tree1.column("Name", minwidth=0,width=250, )
 serverNbTab10Tree1.heading("Type", text="TYPE")
