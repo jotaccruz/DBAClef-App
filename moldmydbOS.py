@@ -150,7 +150,7 @@ def mssqlinfo(selected_modes, server, wmiuser, wmipass):
     mssqlinfo = {}
     mssqlinfo={'No': '1'\
               ,'SystemName': '25'\
-              ,'DisplayName': '35'\
+              ,'DisplayName': '75'\
               ,'Description': '50'\
               ,'Started': '15'\
               ,'StartMode': '15'\

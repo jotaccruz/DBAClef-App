@@ -1,5 +1,5 @@
 SELECT 
-ROW_NUMBER() OVER(ORDER BY [severity] ASC) AS [No],
+ROW_NUMBER() OVER(ORDER BY [name] ASC) AS [No],
 ISNULL(id,LEN('id')) id,
 ISNULL(name,LEN('name')) name,
 ISNULL(severity,LEN('severity')) severity,

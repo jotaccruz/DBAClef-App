@@ -1,7 +1,7 @@
 from openpyxl import Workbook, cell
 from openpyxl.formatting import Rule
-from openpyxl.styles import PatternFill, NamedStyle,Font, Color, Border, Side, \
-Alignment
+from openpyxl.styles import PatternFill, NamedStyle,Font
+from openpyxl.styles import Color, Border, Side, Alignment
 from openpyxl.styles.differential import DifferentialStyle
 try:
     from openpyxl.cell import get_column_letter
@@ -17,9 +17,33 @@ def as_text(value):
 def xlsxGen(excelf,section,tree,tree_name,tree_dic):
     #Style
     red_fill = PatternFill(bgColor="FFC7CE")
-    dxf = DifferentialStyle(fill=red_fill)
-    r = Rule(type="expression", dxf=dxf, stopIfTrue=True)
-    r.formula = ['$B1="Missing"','$B1="Disabled"']
+    orange_fill = PatternFill(bgColor="F5E45E")
+    dxfcritical = DifferentialStyle(fill=red_fill)
+    dxfwarning = DifferentialStyle(fill=orange_fill)
+
+    rcritical = Rule(type="expression", dxf=dxfcritical, stopIfTrue=True)
+    rcritical1 = Rule(type="expression", dxf=dxfcritical, stopIfTrue=True)
+    rcritical2 = Rule(type="expression", dxf=dxfcritical, stopIfTrue=True)
+    rcritical3 = Rule(type="expression", dxf=dxfcritical, stopIfTrue=True)
+    rcritical4 = Rule(type="expression", dxf=dxfcritical, stopIfTrue=True)
+    rcritical5 = Rule(type="expression", dxf=dxfcritical, stopIfTrue=True)
+
+    rwarning = Rule(type="expression", dxf=dxfwarning, stopIfTrue=True)
+    rwarning1 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=True)
+    rwarning2 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=True)
+
+    rcritical.formula = ['$C1="Disabled"']
+    rcritical1.formula = ['$E1="Take Care"']
+    rcritical2.formula = ['$B1="Missing"']
+    rcritical3.formula = ['$C1="Missing"']
+    rcritical4.formula = ['$C1="BUILTIN\\Users"']
+    rcritical5.formula = ['$C1="NT AUTHORITY\\SYSTEM"']
+
+
+    rwarning.formula = ['$F1="Disabled"']
+    #rwarning1.formula = ['$F1<>"sa"']
+    rwarning2.formula = ['$D1="Required"']
+
 
     thin = Side(border_style="thin", color="000000")
     double = Side(border_style="double", color="ff0000")
@@ -50,7 +74,16 @@ def xlsxGen(excelf,section,tree,tree_name,tree_dic):
         col=1
         for values in tree.item(lists)['values']:
             ws.cell (column=col,row=row,value=values)
-            ws.conditional_formatting.add("A1:C500", r)
+            ws.conditional_formatting.add("A1:Z500", rcritical)
+            ws.conditional_formatting.add("A1:Z500", rcritical1)
+            ws.conditional_formatting.add("A1:Z500", rcritical2)
+            ws.conditional_formatting.add("A1:Z500", rcritical3)
+            ws.conditional_formatting.add("A1:Z500", rcritical4)
+            ws.conditional_formatting.add("A1:Z500", rcritical5)
+
+            ws.conditional_formatting.add("A1:Z500", rwarning)
+            #ws.conditional_formatting.add("A1:Z500", rwarning1)
+            ws.conditional_formatting.add("A1:Z500", rwarning2)
             col=col+1
         row=row+1
 
