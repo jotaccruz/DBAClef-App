@@ -3,7 +3,7 @@
 Python 3.7.4
 Created on Fri Nov  8 10:57:06 2019
 Code behind the App that helps DBA to apply best practice to SQL Server:
-    
+
 @author: juan.cruz2
 
 """
@@ -31,7 +31,7 @@ def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
     #mysqlpsw = 'T3lu52018!'
     #mysqlinstancename = 'SUSWEYAK03'
     #sslpath="./ssl-certs/"
-                            
+
     config = {
     'user': mysqlusername,
     'database': mysqldatabase,
@@ -49,7 +49,7 @@ def mysqlconnect(mysqlserver,mysqlusername,mysqlpsw):
         error_handler(err,"Inventory Database")
         #messagebox.showinfo ("Connection Error", err)
         #return err
-        
+
 def mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw):
     #CONNECTION ZONE
     mssqldriver = mssqlodbc()
@@ -87,7 +87,7 @@ def mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw):
     except pyodbc.Error as ex:
         sqlstate = ex.args[1]
         messagebox.showinfo ("Connection Error", sqlstate)
-        
+
 def mssqlexec(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw,sqlexec):
     conn=mssqlconnect(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw)
     cur=conn.cursor()
@@ -123,7 +123,7 @@ def mssqldetail2sql(mssqlserver,mssqlport,mssqldatabase,mssqlusername,mssqlpsw,s
     rows=cur.fetchall()
     conn.close()
     return rows
-    
+
 def insert(title,author,year,isbn):
     conn=mssqlconnect()
     cur=conn.cursor()
@@ -139,5 +139,16 @@ def dbservers(queryexec,mysqlserver,mysqlusername,mysqlpsw):
     rows=cur.fetchall()
     conn.close()
     return rows
+
+def dbserversCreate(queryexec,mysqlserver,mysqlusername,mysqlpsw):
+    conn=mysqlconnect(mysqlserver,mysqlusername,mysqlpsw)
+    cur=conn.cursor()
+    #print (queryexec)
+    #print (mysqlserver)
+    #print (mysqlusername)
+    #print (mysqlpsw)
+    cur.execute(queryexec)
+    conn.commit()
+    conn.close()
 
 #dbservers()

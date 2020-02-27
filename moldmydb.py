@@ -76,6 +76,20 @@ def cleanallone():
     cleanall(serverNbTab12Tree1)
     cleanall(serverNbTab12Tree2)
 
+
+def RemServer():
+    Pass
+
+def AddServer():
+    InventoryFeed = tk.Toplevel(window)
+    InventoryFrameInput = ttk.LabelFrame(InventoryFeed, width=250, height=200,text="Servers")
+    InventoryFrameInput.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
+    labelip=ttk.Label(InventoryFrameInput,text="Ip", wraplength=10)
+    labelip.grid(row=1,column=0,padx=5, pady=5, sticky='w')
+    ip_text=StringVar(value='172.25.20.17')
+    ip=ttk.Entry(InventoryFrameInput,textvariable=ip_text,width=20)
+    ip.grid(row=1,column=1,padx=5, pady=5,sticky="w")
+
 def select_notebooktab(Tab):
     serverNb.select(Tab)
 
@@ -182,7 +196,7 @@ def view_command():
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
 
-    query="SELECT srv_name as SERVER, srv_instance as INSTANCE, srv_ip as IP,"+\
+    query="SELECT srv_name as SERVER, srv_instance as INSTANCE, srv_ip1 as IP,"+\
             "srv_ins_port as PORT, '' as USER, '' as PWD, srv_os as OS"+\
             " FROM lgm_servers"# WHERE"+\
             #" srv_name in"+\
@@ -1392,17 +1406,25 @@ filemenu.add_command(label="Exit", command=window.destroy)
 menubar.add_cascade(label="Setup", menu=filemenu)
 
 # create more pulldown menus
-editmenu = Menu(menubar, tearoff=0)
-editmenu.add_command(label="Standard Setup", command= lambda: \
+Reportmenu = Menu(menubar, tearoff=0)
+Reportmenu.add_command(label="Standard Setup", command= lambda: \
 Reports(global_treeview_dic))
-editmenu.add_command(label="Advance", command=hello)
-editmenu.add_command(label="Paste", command=hello)
-menubar.add_cascade(label="Reports", menu=editmenu)
+Reportmenu.add_command(label="Advance", command=hello)
+Reportmenu.add_command(label="Paste", command=hello)
+menubar.add_cascade(label="Reports", menu=Reportmenu)
+
+Inventorymenu = Menu(menubar, tearoff=0)
+Inventorymenu.add_command(label="Add Server", command= AddServer)
+Inventorymenu.add_command(label="Remove Server", command=RemServer)
+Inventorymenu.add_command(label="Other", command=hello)
+menubar.add_cascade(label="Inventory", menu=Inventorymenu)
 
 helpmenu = Menu(menubar, tearoff=0)
 helpmenu.add_command(label="WIN - SQL Server - Standard Setup", command=hello)
 helpmenu.add_command(label="About", command= About)
 menubar.add_cascade(label="Help", menu=helpmenu)
+
+
 
 # display the menu
 window.config(menu=menubar)
