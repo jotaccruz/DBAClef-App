@@ -39,6 +39,9 @@ from openpyxl import Workbook
 
 window=Tk()
 global_treeview_dic = {}
+mysqlserver=''
+mysqlusername=''
+mysqlpsw=''
 #Funtions----------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #---
@@ -79,16 +82,6 @@ def cleanallone():
 
 def RemServer():
     Pass
-
-def AddServer():
-    InventoryFeed = tk.Toplevel(window)
-    InventoryFrameInput = ttk.LabelFrame(InventoryFeed, width=250, height=200,text="Servers")
-    InventoryFrameInput.grid(row=0,column=0,padx=5, pady=5, rowspan=2)
-    labelip=ttk.Label(InventoryFrameInput,text="Ip", wraplength=10)
-    labelip.grid(row=1,column=0,padx=5, pady=5, sticky='w')
-    ip_text=StringVar(value='172.25.20.17')
-    ip=ttk.Entry(InventoryFrameInput,textvariable=ip_text,width=20)
-    ip.grid(row=1,column=1,padx=5, pady=5,sticky="w")
 
 def select_notebooktab(Tab):
     serverNb.select(Tab)
@@ -193,6 +186,9 @@ def basic_analyze_command():
 
 #---
 def view_command():
+    global mysqlserver
+    global mysqlusername
+    global mysqlpsw
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
 
@@ -1414,7 +1410,7 @@ Reportmenu.add_command(label="Paste", command=hello)
 menubar.add_cascade(label="Reports", menu=Reportmenu)
 
 Inventorymenu = Menu(menubar, tearoff=0)
-Inventorymenu.add_command(label="Add Server", command= AddServer)
+Inventorymenu.add_command(label="Add Server", command=lambda: Inventory_AddServer(window))
 Inventorymenu.add_command(label="Remove Server", command=RemServer)
 Inventorymenu.add_command(label="Other", command=hello)
 menubar.add_cascade(label="Inventory", menu=Inventorymenu)

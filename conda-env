@@ -7,5 +7,6 @@ conda install mysql-connector-python
 conda install -c primer wmi
 conda install -c conda-forge pyinstaller
 conda install -c anaconda openpyxl
+conda install -c anaconda passlib
 #conda install pandas
 #python setup.py install / https://github.com/reingart/pyfpdf/releases
