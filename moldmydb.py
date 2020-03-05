@@ -102,25 +102,6 @@ def cleanall(widget):
 
 #---
 
-def getFileUrl(filename,directory):
-    if getattr(sys, 'frozen', False): # Running as compiled
-        running_dir = sys._MEIPASS + "/" + directory + "/" #"/files/" # Same path name than pyinstaller option
-    else:
-        running_dir = "./" + directory + "/" # Path name when run with Python interpreter
-    FileName = running_dir + filename #"moldmydb.png"
-    return FileName
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-
 def About():
     tkinter.messagebox.showinfo(title="moldmydb", message="Telus International\
     - MoldMydb v 1.0",)

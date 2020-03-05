@@ -183,6 +183,23 @@ def mssqlinfo(selected_modes, server, wmiuser, wmipass):
             i=i+1
     return services
 
+    def getFileUrl(filename,directory):
+        if getattr(sys, 'frozen', False): # Running as compiled
+            running_dir = sys._MEIPASS + "/" + directory + "/" #"/files/" # Same path name than pyinstaller option
+        else:
+            running_dir = "./" + directory + "/" # Path name when run with Python interpreter
+        FileName = running_dir + filename #"moldmydb.png"
+        return FileName
+
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
 #disks=diskinfo()
 #pp = pprint.PrettyPrinter(indent=4)
 #pp = pprint.PrettyPrinter(depth=6)

@@ -140,15 +140,17 @@ def dbservers(queryexec,mysqlserver,mysqlusername,mysqlpsw):
     conn.close()
     return rows
 
-def dbserversCreate(queryexec,mysqlserver,mysqlusername,mysqlpsw):
+def dbserversCreate(queryexec,parameters,mysqlserver,mysqlusername,mysqlpsw):
     conn=mysqlconnect(mysqlserver,mysqlusername,mysqlpsw)
     cur=conn.cursor()
-    #print (queryexec)
-    #print (mysqlserver)
-    #print (mysqlusername)
-    #print (mysqlpsw)
-    cur.execute(queryexec)
+    cur.execute(queryexec,parameters)
     conn.commit()
     conn.close()
 
-#dbservers()
+def dbserversQuery(queryexec,parameters,mysqlserver,mysqlusername,mysqlpsw):
+    conn=mysqlconnect(mysqlserver,mysqlusername,mysqlpsw)
+    cur=conn.cursor()
+    cur.execute(queryexec,parameters)
+    rows=cur.fetchall()
+    conn.close()
+    return rows

@@ -17,6 +17,7 @@ def decryptPass(Pass,key):
     return plain_text_encryptedpassword
 
 key = newkey()
+print (type(key))
 Pass=encryptPass("MyPass",key)
 print (Pass)
 Pass=decryptPass(Pass,key)
