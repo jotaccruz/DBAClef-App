@@ -518,7 +518,7 @@ def get_ifitest_command(mode):
     #    error_handler("Error","IFI testing failed")
 
 #---Main
-def get_detail_command(mode):
+def get_detail_command(mode,osmode):
     global global_treeview_dic
     if (mode == 1):
         selected_row = {
@@ -544,110 +544,138 @@ def get_detail_command(mode):
         except IndexError:
             pass
 
-#Tab Status
-#Last startup
-    sqlexec1 = readFileFromOS(getFileUrl("StatusTree1_0.sql","scripts"))
-    for i in StatusTree1.get_children():
-        StatusTree1.delete(i)
+    if (osmode == 1):
+        print("osmode=1")
+    #Tab Services----------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1):
-        StatusTree1.insert("", END, values=(row[0],row[1]))
+    #Services
+        for i in serverNbTab1Tree2.get_children():
+            serverNbTab1Tree2.delete(i)
 
-#CPUs
-    sqlexec1 = readFileFromOS(getFileUrl("StatusTree2_0.sql","scripts"))
+        try:
+            for row in mssqlinfo(mode, selected_row['Ip'], wmiuser, wmipass):
+                if (row['No']=='1'):
+                    global_treeview_dic['serverNbTab1Tree2']=[str(int(row['No'])+4),row['SystemName'],\
+                    row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status']]
+                    continue
+                if (row['State'] == "Stopped"):
+                    serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                    row['SystemName'],row['DisplayName'],row['Description'],\
+                    row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                    row['Status'],),tags = ('need',))
+                    continue
 
-    sqlexec3 = readFileFromOS(getFileUrl("StatusTree2_1.sql","scripts"))
+                if (row['State'] == "Disabled"):
+                    serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                    row['SystemName'],row['DisplayName'],row['Description'],\
+                    row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                    row['Status'],),tags = ('critical',))
+                    continue
 
-    for i in StatusTree2.get_children():
-        StatusTree2.delete(i)
+                serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                row['SystemName'],row['DisplayName'],row['Description'],\
+                row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                row['Status'],),tags = ('good',))
+        except:
+            global_treeview_dic['serverNbTab1Tree2']=[5,15,25,50,15,15,25,15,15,25]
+            serverNbTab1Tree2.insert("", END, values=("1","Missing","Not available"\
+            ,"","","","","","",),tags = ('critical',))
+            pass
 
-    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
-    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec3):
-        StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
+        serverNbTab1Tree2.tag_configure('need', background='#f5e45e')
+        serverNbTab1Tree2.tag_configure('critical', background='#f86d7e')
 
-#Version
-    sqlexec1 = readFileFromOS(getFileUrl("StatusTree3_0.sql","scripts"))
-    for i in StatusTree3.get_children():
-        StatusTree3.delete(i)
+    #Tab Disks---------------------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1):
-        StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],\
-        row[5]))
+        for i in serverNbTab2Tree1.get_children():
+            serverNbTab2Tree1.delete(i)
 
-#Is Supported?
+        try:
+            for row in diskinfo(mode, selected_row['Ip'], wmiuser, wmipass):
+                if (row['No']=='1'):
+                    global_treeview_dic['serverNbTab2Tree1']=[str(int(row['No'])+4)\
+                    ,row['SystemName'],row['Name'],row['DriveLetter'],\
+                    row['FileSystem'],row['Label'],row['Capacity'],\
+                    row['FreeSpace'],row['BlockSize'],"10"]
+                    continue
+                if (row['DriveType'] == 3):
+                    if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
+                        serverNbTab2Tree1.insert("", END, values=(row['No'],\
+                        row['SystemName'],row['Name'],row['DriveLetter'],\
+                        row['FileSystem'],row['Label'],row['Capacity'],\
+                        row['FreeSpace'],row['BlockSize'],"64"),tags = ('need',))
+                    else:
+                        serverNbTab2Tree1.insert("", END, values=(row['No'],\
+                        row['SystemName'],row['Name'],row['DriveLetter'],\
+                        row['FileSystem'],row['Label'],row['Capacity'],\
+                        row['FreeSpace'],row['BlockSize'],"N/A"),tags = ('good',))
 
-    for i in StatusTree3.get_children():
-        if (float(StatusTree3.item(i)["values"][0][0:2])<11):
-            VersionTree1.insert("", END, values=("So\\ Sorry!!!\\ Version\\ \
-            is\\ not\\ supported.\\ Some\\ functionalities\\ may\\ don't\\ work\
-            "), tags = ('need',))
-        else:
-            VersionTree1.insert("", END, values=("Version\\ is\\ supported."), \
-            tags = ('good',))
+            serverNbTab2Tree1.tag_configure('need', background='#f5e45e')
 
-    VersionTree1.tag_configure('need', background='#f86d7e')
+        except:
+            global_treeview_dic['serverNbTab2Tree1']=[5,15,25,15,15,15,25,15,15,25]
+            serverNbTab2Tree1.insert("", END, values=("1","Missing",\
+                                                      "Not available",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      ""),\
+            tags = ('need',))
+            serverNbTab2Tree1.tag_configure('need', background='#f86d7e')
+            pass
 
-#Missing updates
 
-    sqlexec1=readFileFromOS(getFileUrl("StatusTree4_0.sql","scripts"))
+    #Tab Page File-----------------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-    for i in StatusTree4.get_children():
-        StatusTree4.delete(i)
+        for i in serverNbTab3Tree1.get_children():
+            serverNbTab3Tree1.delete(i)
 
-    try:
-        for row in mssqldetail(selected_row['Ip'],selected_row['Port'],\
-        "master",selected_row['User'],selected_row['Pwd'],sqlexec1):
-            version = mssqlversioncomplete(row[0])
-            #version = mssqlversioncomplete("12.0.6259")
-            #print (version)
-        i=1
-        list=[]
-        list=[str(i+4),'10','10','10','10','10','10']
-        global_treeview_dic['StatusTree4']=list
-        i=2
-        for dic in version:
-            list=[]
-            list.append(str(i))
-            if 'Version' in dic:
-                list.append(dic['Version'])
-            else:
-                list.append('')
+        try:
+            for row in pageinfo(mode, selected_row['Ip'], wmiuser, wmipass):
+                if (row['No']=='1'):
+                    global_treeview_dic['serverNbTab3Tree1']=[str(int(row['No'])+4)\
+                    ,row['SystemName'],\
+                    row['Automatic'],\
+                    row['Caption'],\
+                    row['Status'],\
+                    row['CurrentUsage'],\
+                    row['PeakUsage'],\
+                    row['InitialSize'],\
+                    row['MaximumSize']]
+                    continue
+                serverNbTab3Tree1.insert("", END, values=(row['No'],\
+                                                              row['SystemName'],\
+                                                              row['Automatic'],\
+                                                              row['Caption'],\
+                                                              row['Status'],\
+                                                              row['CurrentUsage'],\
+                                                              row['PeakUsage'],\
+                                                              row['InitialSize'],\
+                                                              row['MaximumSize']),\
+                tags = ('good',))
+        except:
+            global_treeview_dic['serverNbTab3Tree1']=[5,15,25,25,15,15,25,15,15]
+            serverNbTab3Tree1.insert("", END, values=("1",
+                                                      "Missing",
+                                                      "Not available",
+                                                      "",
+                                                      "",
+                                                      "",
+                                                      "",
+                                                      "",
+                                                      ""),
+            tags = ('need',))
+            pass
+        serverNbTab3Tree1.tag_configure('need', background='#f86d7e')
 
-            if 'SupportedUntil' in dic:
-                list.append(dic['SupportedUntil'])
-            else:
-                list.append('')
-
-            if 'Name' in dic:
-                list.append(dic['Name'])
-            else:
-                list.append('')
-
-            if 'SP' in dic:
-                list.append(dic['SP'])
-            else:
-                list.append('')
-
-            if 'CU' in dic:
-                list.append(dic['CU'])
-            else:
-                list.append('')
-
-            if 'KBList' in dic:
-                list.append(dic['KBList'])
-            else:
-                list.append('')
-            StatusTree4.insert("",END,values=(list),tags = ('need'))
-            i=i+1
-    except:
-        StatusTree4.insert("", END, values=("1","Missing",'','','','',''),\
-        tags = ('need',))
-        pass
-
-    StatusTree4.tag_configure('need', background='#f86d7e')
-
+        return
+    print("osmode=0")
 #Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -670,6 +698,7 @@ def get_detail_command(mode):
             serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6],),tags = ('good'))
     serverNbTab1Tree1.tag_configure('need', background='#f5e45e')
+    
 #Services
     for i in serverNbTab1Tree2.get_children():
         serverNbTab1Tree2.delete(i)
@@ -794,6 +823,110 @@ def get_detail_command(mode):
         tags = ('need',))
         pass
     serverNbTab3Tree1.tag_configure('need', background='#f86d7e')
+
+#Tab Status
+#Last startup
+    sqlexec1 = readFileFromOS(getFileUrl("StatusTree1_0.sql","scripts"))
+    for i in StatusTree1.get_children():
+        StatusTree1.delete(i)
+
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        StatusTree1.insert("", END, values=(row[0],row[1]))
+
+#CPUs
+    sqlexec1 = readFileFromOS(getFileUrl("StatusTree2_0.sql","scripts"))
+
+    sqlexec3 = readFileFromOS(getFileUrl("StatusTree2_1.sql","scripts"))
+
+    for i in StatusTree2.get_children():
+        StatusTree2.delete(i)
+
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec3):
+        StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
+
+#Version
+    sqlexec1 = readFileFromOS(getFileUrl("StatusTree3_0.sql","scripts"))
+    for i in StatusTree3.get_children():
+        StatusTree3.delete(i)
+
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],\
+        row[5]))
+
+#Is Supported?
+
+    for i in StatusTree3.get_children():
+        if (float(StatusTree3.item(i)["values"][0][0:2])<11):
+            VersionTree1.insert("", END, values=("So\\ Sorry!!!\\ Version\\ \
+            is\\ not\\ supported.\\ Some\\ functionalities\\ may\\ don't\\ work\
+            "), tags = ('need',))
+        else:
+            VersionTree1.insert("", END, values=("Version\\ is\\ supported."), \
+            tags = ('good',))
+
+    VersionTree1.tag_configure('need', background='#f86d7e')
+
+#Missing updates
+
+    sqlexec1=readFileFromOS(getFileUrl("StatusTree4_0.sql","scripts"))
+
+    for i in StatusTree4.get_children():
+        StatusTree4.delete(i)
+
+    try:
+        for row in mssqldetail(selected_row['Ip'],selected_row['Port'],\
+        "master",selected_row['User'],selected_row['Pwd'],sqlexec1):
+            version = mssqlversioncomplete(row[0])
+            #version = mssqlversioncomplete("12.0.6259")
+            #print (version)
+        i=1
+        list=[]
+        list=[str(i+4),'10','10','10','10','10','10']
+        global_treeview_dic['StatusTree4']=list
+        i=2
+        for dic in version:
+            list=[]
+            list.append(str(i))
+            if 'Version' in dic:
+                list.append(dic['Version'])
+            else:
+                list.append('')
+
+            if 'SupportedUntil' in dic:
+                list.append(dic['SupportedUntil'])
+            else:
+                list.append('')
+
+            if 'Name' in dic:
+                list.append(dic['Name'])
+            else:
+                list.append('')
+
+            if 'SP' in dic:
+                list.append(dic['SP'])
+            else:
+                list.append('')
+
+            if 'CU' in dic:
+                list.append(dic['CU'])
+            else:
+                list.append('')
+
+            if 'KBList' in dic:
+                list.append(dic['KBList'])
+            else:
+                list.append('')
+            StatusTree4.insert("",END,values=(list),tags = ('need'))
+            i=i+1
+    except:
+        StatusTree4.insert("", END, values=("1","Missing",'','','','',''),\
+        tags = ('need',))
+        pass
+
+    StatusTree4.tag_configure('need', background='#f86d7e')
 
 #Tab Default Paths-------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1484,8 +1617,15 @@ SQLPassEntry=ttk.Entry(inventoryframe,textvariable=SQLPass,show='*',width=20)
 SQLPassEntry.grid(row=3,column=2,padx=5, pady=5,sticky="w")
 
 #Bottoms
+#CheckButton Controls
+OsMode = IntVar()
+OsMode.set(0)
+
+OSOnly = ttk.Checkbutton(inventoryframe, text="OS Only", variable=OsMode)
+OSOnly.grid(row=10, column=1, sticky="e", padx=5, pady=5,)
+
 DetailButton = ttk.Button(inventoryframe, text='Connect', underline = 0, \
-command= lambda: get_detail_command(ConnMode.get()))
+command= lambda: get_detail_command(ConnMode.get(),OsMode.get()))
 DetailButton.grid(row=10, column=2, sticky="e", padx=5, pady=5,)
 
 InventoryButton = ttk.Button(inventory2frame, state=DISABLED, text='Load', \
