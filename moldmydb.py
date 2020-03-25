@@ -36,6 +36,8 @@ import moldmydbExcel
 from moldmydbExcel import *
 from datetime import date
 from openpyxl import Workbook
+import moldmydbInventory
+from moldmydbInventory import *
 
 window=Tk()
 global_treeview_dic = {}
@@ -79,6 +81,8 @@ def cleanallone():
     cleanall(serverNbTab12Tree1)
     cleanall(serverNbTab12Tree2)
 
+def Inventory_AddServer(window):
+    Interfaz = InventoryFeeds(window,mysqlserver,mysqlusername,mysqlpsw)
 
 def RemServer():
     Pass
@@ -135,6 +139,9 @@ def Reports(global_treeview_dic):
     #excelf=xlsxGen(excelf,'DBA Tools',serverNbTab9Tree1)
 
     excelf.save(server+'-'+today+'.xlsx')
+    success_handler("Standard Setup Report","Report was generated successfuly")
+
+
     #pdffinal.output('Assessment-'+server+'-'+today+'.pdf', 'F')
 
 def hello():
@@ -545,7 +552,6 @@ def get_detail_command(mode,osmode):
             pass
 
     if (osmode == 1):
-        print("osmode=1")
     #Tab Services----------------------------------------------------------
     #------------------------------------------------------------------------------
 
@@ -675,7 +681,6 @@ def get_detail_command(mode,osmode):
         serverNbTab3Tree1.tag_configure('need', background='#f86d7e')
 
         return
-    print("osmode=0")
 #Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -698,7 +703,7 @@ def get_detail_command(mode,osmode):
             serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6],),tags = ('good'))
     serverNbTab1Tree1.tag_configure('need', background='#f5e45e')
-    
+
 #Services
     for i in serverNbTab1Tree2.get_children():
         serverNbTab1Tree2.delete(i)
@@ -1525,7 +1530,7 @@ menubar.add_cascade(label="Reports", menu=Reportmenu)
 
 Inventorymenu = Menu(menubar, tearoff=0)
 Inventorymenu.add_command(label="Add Server", command=lambda: Inventory_AddServer(window))
-Inventorymenu.add_command(label="Remove Server", command=RemServer)
+Inventorymenu.add_command(label="Remove Server", command=lambda: Inventory_AddServer(window))
 Inventorymenu.add_command(label="Other", command=hello)
 menubar.add_cascade(label="Inventory", menu=Inventorymenu)
 

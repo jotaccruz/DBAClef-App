@@ -234,7 +234,8 @@ class InventoryFeeds():
         self.b4=Button(self.InventoryFrameInput,text="Update selected",width=12,command= lambda: self.update_command())
         self.b4.grid(row=3,column=6,padx=5, pady=5,)
 
-        self.b5=Button(self.InventoryFrameInput,text="Close",width=12,command=self.InventoryFrameInput.destroy)
+        #self.b5=Button(self.InventoryFrameInput,text="Close",width=12,command=self.InventoryFrameInput.destroy)
+        self.b5=Button(self.InventoryFrameInput,text="Close",width=12,command= lambda: self.close_command())
         self.b5.grid(row=4,column=6,padx=5, pady=5,)
 
         self.b5=Button(self.InventoryFrameInput,text="New keys",width=12,command= lambda: self.newkeys_command())
@@ -440,12 +441,13 @@ class InventoryFeeds():
         dbserversCreate(self.sqlexec,self.parameters,InventoryFeeds.mysqlserver,InventoryFeeds.mysqlusername,InventoryFeeds.mysqlpsw)
         self.view_command()
 
-    def close_command():
-        return
+    def close_command(self):
+        self.InventoryFeed.destroy()
+        #return
 
-window=Tk()
-mysqlserver='172.25.20.17'
-mysqlusername='ISJCruz'
-mysqlpsw='T3lu52018!'
-Interfaz = InventoryFeeds(window,mysqlserver,mysqlusername,mysqlpsw)
-window.mainloop()
+#window=Tk()
+#mysqlserver='172.25.20.17'
+#mysqlusername='ISJCruz'
+#mysqlpsw='T3lu52018!'
+#Interfaz = InventoryFeeds(window,mysqlserver,mysqlusername,mysqlpsw)
+#window.mainloop()
