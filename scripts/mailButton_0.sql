@@ -63,6 +63,8 @@ END
 USE master;
 exec sp_configure 'show advanced', 1;
 RECONFIGURE WITH OVERRIDE;
+exec sp_configure 'Agent XPs',1
+RECONFIGURE WITH OVERRIDE;
 exec sp_configure 'Database Mail XPs', 1;
 RECONFIGURE WITH OVERRIDE;
 exec sp_configure 'show advanced', 0;

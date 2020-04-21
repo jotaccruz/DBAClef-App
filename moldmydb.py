@@ -80,6 +80,7 @@ def cleanallone():
     cleanall(serverNbTab10Tree1)
     cleanall(serverNbTab12Tree1)
     cleanall(serverNbTab12Tree2)
+    cleanall(serverNbTab13Tree1)
 
 def Inventory_AddServer(window):
     Interfaz = InventoryFeeds(window,mysqlserver,mysqlusername,mysqlpsw)
@@ -135,6 +136,10 @@ def Reports(global_treeview_dic):
     #excelf=xlsxGen(excelf,'Transaction Log',serverNbTab12Tree1)
     excelf=xlsxGen(excelf,'Sys Admin',serverNbTab10Tree1,'serverNbTab10Tree1',\
     global_treeview_dic)
+
+    excelf=xlsxGen(excelf,'Jobs',serverNbTab13Tree1,'serverNbTab13Tree1',\
+    global_treeview_dic)
+
     #excelf=xlsxGen(excelf,'General Check',serverNbTab11Tree1)
     #excelf=xlsxGen(excelf,'DBA Tools',serverNbTab9Tree1)
 
@@ -565,14 +570,15 @@ def get_detail_command(mode,osmode):
                     global_treeview_dic['serverNbTab1Tree2']=[str(int(row['No'])+4),row['SystemName'],\
                     row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status']]
                     continue
-                if (row['State'] == "Stopped"):
+
+                if (row['State'] == "Stopped" or row['State'] == "Disabled"):
                     serverNbTab1Tree2.insert("", END, values=(row['No'],\
                     row['SystemName'],row['DisplayName'],row['Description'],\
                     row['Started'],row['StartMode'],row['StartName'],row['State'],\
                     row['Status'],),tags = ('need',))
                     continue
 
-                if (row['State'] == "Disabled"):
+                if (row['State'] == "Running" and row['DisplayName'].find("CEIP")>-1):
                     serverNbTab1Tree2.insert("", END, values=(row['No'],\
                     row['SystemName'],row['DisplayName'],row['Description'],\
                     row['Started'],row['StartMode'],row['StartName'],row['State'],\
@@ -714,14 +720,15 @@ def get_detail_command(mode,osmode):
                 global_treeview_dic['serverNbTab1Tree2']=[str(int(row['No'])+4),row['SystemName'],\
                 row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status']]
                 continue
-            if (row['State'] == "Stopped"):
+
+            if (row['State'] == "Stopped" or row['State'] == "Disabled"):
                 serverNbTab1Tree2.insert("", END, values=(row['No'],\
                 row['SystemName'],row['DisplayName'],row['Description'],\
                 row['Started'],row['StartMode'],row['StartName'],row['State'],\
                 row['Status'],),tags = ('need',))
                 continue
 
-            if (row['State'] == "Disabled"):
+            if (row['State'] == "Running" and row['DisplayName'].find("CEIP")>-1):
                 serverNbTab1Tree2.insert("", END, values=(row['No'],\
                 row['SystemName'],row['DisplayName'],row['Description'],\
                 row['Started'],row['StartMode'],row['StartName'],row['State'],\
@@ -927,7 +934,7 @@ def get_detail_command(mode,osmode):
             StatusTree4.insert("",END,values=(list),tags = ('need'))
             i=i+1
     except:
-        StatusTree4.insert("", END, values=("1","Missing",'','','','',''),\
+        StatusTree4.insert("", END, values=("1","Error!!",'','','','',''),\
         tags = ('need',))
         pass
 
@@ -1493,6 +1500,53 @@ def get_detail_command(mode,osmode):
 
     serverNbTab11Tree1.tag_configure('need', background='#f86d7e')
 
+#Agent Jobs
+#--Jobs
+    sqlexec = readFileFromOS(getFileUrl("serverNbTab13Tree1_0.sql","scripts"))
+    sqlexec0 = readFileFromOS(getFileUrl("serverNbTab13Tree1_1.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab13Tree1_2.sql","scripts"))
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1)
+
+    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab13Tree1_3.sql","scripts"))
+
+    sqlexec3 = readFileFromOS(getFileUrl("serverNbTab13Tree1_4.sql","scripts"))
+
+    for i in serverNbTab13Tree1.get_children():
+        serverNbTab13Tree1.delete(i)
+
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    "master",selected_row['User'],selected_row['Pwd'],sqlexec2,sqlexec3):
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab13Tree1']=[row[0],row[1],row[2],\
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
+            row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
+            row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
+            row[28],row[29],row[30],row[31]]
+            continue
+
+        if (row[7]!='sa' or row[21]=='Fail' or row[28]=='N' or row[29]=='N'):
+            serverNbTab13Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
+            row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
+            row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
+            row[28],row[29],row[30],row[31],),tag='need')
+        else:
+            serverNbTab13Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
+            row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
+            row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
+            row[28],row[29],row[30],row[31],),tag='good')
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+
+    serverNbTab13Tree1.tag_configure('need', background='#f86d7e')
+    #serverNbTab12Tree2.tag_configure('good', background='#aef38c')
 
 
 ####### main ------------------------------------------------------------------
@@ -1770,6 +1824,7 @@ serverNbTab9=Frame(serverNb)
 serverNbTab10=Frame(serverNb)
 serverNbTab11=Frame(serverNb)
 serverNbTab12=Frame(serverNb)
+serverNbTab13=Frame(serverNb)
 
 ##Special Settings Tab
 #Instance
@@ -2164,6 +2219,76 @@ scrollbar_vertical = ttk.Scrollbar(serverNbTab12, orient="vertical", \
 scrollbar_vertical.grid(row=0, column=3, sticky="ens")
 serverNbTab12Tree2.configure(yscrollcommand=scrollbar_vertical.set)
 
+
+#--#Agent Job Tab
+#--Job Information
+serverNbTab13Tree1=ttk.Treeview(serverNbTab13,show='headings',height=12, )
+serverNbTab13Tree1.grid(row=0,column=0,padx=5, pady=5, )
+
+serverNbTab13Tree1['columns'] = ('Job_id','Originating_server','Name',\
+'Enable','Description','Start_step_id','Category','Owner',\
+'Notify_level_eventlog','Notify_level_email','Notify_level_netsend',\
+'Notify_level_page','Notify_email_operator','Notify_netsend_operator',\
+'Notify_page_operator','Delete_level','Date_created','Date_modified',\
+'Version_number','Last_run_date','Last_run_time','Last_run_outcome',\
+'Next_run_date','Next_run_time','Next_run_schedule_id',\
+'Current_execution_status','Current_execution_step',\
+'Current_retry_attempt','Has_step','Has_schedule','Has_target','Type')
+
+serverNbTab13Tree1['displaycolumns'] = ('Name',\
+'Enable','Description','Owner','Date_created',\
+'Last_run_date','Last_run_time','Last_run_outcome',\
+'Next_run_date','Next_run_time','Has_step','Has_schedule',)
+
+serverNbTab13Tree1.heading("Job_id", text="JOBID")
+serverNbTab13Tree1.column("Job_id", minwidth=0,width=100,anchor="w")
+serverNbTab13Tree1.heading("Name", text="NAME")
+serverNbTab13Tree1.column("Name", minwidth=0,width=200,anchor="w")
+serverNbTab13Tree1.heading("Enable", text="ON")
+serverNbTab13Tree1.column("Enable", minwidth=0,width=30,anchor="w")
+serverNbTab13Tree1.heading("Description", text="DESC")
+serverNbTab13Tree1.column("Description", minwidth=0,width=180,anchor="w")
+serverNbTab13Tree1.heading("Owner", text="OWN")
+serverNbTab13Tree1.column("Owner", minwidth=0,width=40,anchor="w")
+serverNbTab13Tree1.heading("Date_created", text="CREATED")
+serverNbTab13Tree1.column("Date_created", minwidth=0,width=70,anchor="w")
+serverNbTab13Tree1.heading("Last_run_date", text="LAST")
+serverNbTab13Tree1.column("Last_run_date", minwidth=0,width=60,anchor="w")
+serverNbTab13Tree1.heading("Last_run_time", text="TIME")
+serverNbTab13Tree1.column("Last_run_time", minwidth=0,width=50,anchor="w")
+serverNbTab13Tree1.heading("Last_run_outcome", text="OUTCOME")
+serverNbTab13Tree1.column("Last_run_outcome", minwidth=0,width=70,anchor="w")
+serverNbTab13Tree1.heading("Next_run_date", text="NEXT")
+serverNbTab13Tree1.column("Next_run_date", minwidth=0,width=60,anchor="w")
+serverNbTab13Tree1.heading("Next_run_time", text="TIME")
+serverNbTab13Tree1.column("Next_run_time", minwidth=0,width=50,anchor="w")
+serverNbTab13Tree1.heading("Has_step", text="STEP")
+serverNbTab13Tree1.column("Has_step", minwidth=0,width=40,anchor="w")
+serverNbTab13Tree1.heading("Has_schedule", text="SCH")
+serverNbTab13Tree1.column("Has_schedule", minwidth=0,width=30,anchor="w")
+serverNbTab13Tree1.heading("Type", text="TYPE")
+serverNbTab13Tree1.column("Type", minwidth=0,width=50,anchor="w")
+
+scrollbar_vertical = ttk.Scrollbar(serverNbTab13, orient="vertical", \
+                                   command=serverNbTab13Tree1.yview)
+scrollbar_vertical.grid(row=0, column=1, sticky="ens")
+serverNbTab13Tree1.configure(yscrollcommand=scrollbar_vertical.set)
+
+#--VLF
+serverNbTab12Tree2=ttk.Treeview(serverNbTab12,show='headings',height=12, )
+serverNbTab12Tree2.grid(row=0,column=2,padx=5, pady=5, )
+serverNbTab12Tree2['columns'] = ('Database','Vlfs',)
+serverNbTab12Tree2['displaycolumns'] = ('Database','Vlfs',)
+serverNbTab12Tree2.heading("Database", text="DATABASE")
+serverNbTab12Tree2.column("Database", minwidth=0,width=160,anchor="w")
+serverNbTab12Tree2.heading("Vlfs", text="VLFs")
+serverNbTab12Tree2.column("Vlfs", minwidth=0,width=100,anchor="w")
+scrollbar_vertical = ttk.Scrollbar(serverNbTab12, orient="vertical", \
+                                   command=serverNbTab12Tree2.yview)
+scrollbar_vertical.grid(row=0, column=3, sticky="ens")
+serverNbTab12Tree2.configure(yscrollcommand=scrollbar_vertical.set)
+
+
 #--#Logins Sysadmin Tab
 #--Sysadmin members
 serverNbTab10Tree1=ttk.Treeview(serverNbTab10,show='headings',height=12, )
@@ -2289,6 +2414,9 @@ serverNbTab9Tree4.heading("Db", text="DB")
 serverNbTab9Tree4.column("Db", minwidth=0,width=145, )
 
 #--Default trace
+labeldftrace=ttk.Label(serverNbTab11,text="Default trace")
+labeldftrace.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+
 serverNbTab11Tree1=ttk.Treeview(serverNbTab11,show='headings',height=5, )
 serverNbTab11Tree1.grid(row=5,column=0,padx=5, pady=5,columnspan=4,sticky='w' )
 serverNbTab11Tree1['columns'] = ('Id','Property','Value',)
@@ -2316,6 +2444,7 @@ serverNb.add(serverNbTab5, text='DBMail & Alerts',)
 serverNb.add(serverNbTab8, text='Databases',)
 serverNb.add(serverNbTab12, text='Transaction Log',)
 serverNb.add(serverNbTab10, text='Sysadmins',)
+serverNb.add(serverNbTab13, text='Agent Jobs',)
 serverNb.add(serverNbTab7, text='General Check',)
 serverNb.add(serverNbTab9, text='DBA Tools',)
 serverNb.add(serverNbTab11, text='Other Options',)

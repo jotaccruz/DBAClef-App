@@ -17,7 +17,7 @@ def mssqlversion(version):
     URL = 'https://sqlcollaborative.github.io/assets/dbatools-buildref-index.json'
     page = requests.get(URL).json()
     animals = []
-    
+
     for keys in page:
         a = page[keys]
         if (type(a) is list):
@@ -31,6 +31,7 @@ def mssqlversion(version):
 def mssqlversioncomplete(version):
     URL = 'https://sqlcollaborative.github.io/assets/dbatools-buildref-index.json'
     page = requests.get(URL).json()
+    print("getting")
     animals = []
     for element in page:
         a = page[element]
