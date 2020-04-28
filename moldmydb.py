@@ -1527,21 +1527,21 @@ def get_detail_command(mode,osmode):
             row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
             row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
             row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
-            row[28],row[29],row[30],row[31]]
+            row[28],row[29],row[30],row[31],row[32]]
             continue
 
-        if (row[7]!='sa' or row[21]=='Fail' or row[28]=='N' or row[29]=='N'):
+        if (row[8]!='sa' or row[22]=='Fail' or row[29]=='N' or row[30]=='N'):
             serverNbTab13Tree1.insert("", END, values=(row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
             row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
             row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
-            row[28],row[29],row[30],row[31],),tag='need')
+            row[28],row[29],row[30],row[31],row[32]),tag='need')
         else:
             serverNbTab13Tree1.insert("", END, values=(row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
             row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
             row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
-            row[28],row[29],row[30],row[31],),tag='good')
+            row[28],row[29],row[30],row[31],row[32]),tag='good')
     mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
 
@@ -1805,6 +1805,8 @@ StatusTree4.column("Cu", minwidth=0,width=45)
 StatusTree4.heading("Cu", text="CU",)
 StatusTree4.column("KBList", minwidth=0,width=60)
 StatusTree4.heading("KBList", text="KBLIST",)
+
+
 
 detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
 detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2, sticky="w")
@@ -2225,7 +2227,7 @@ serverNbTab12Tree2.configure(yscrollcommand=scrollbar_vertical.set)
 serverNbTab13Tree1=ttk.Treeview(serverNbTab13,show='headings',height=12, )
 serverNbTab13Tree1.grid(row=0,column=0,padx=5, pady=5, )
 
-serverNbTab13Tree1['columns'] = ('Job_id','Originating_server','Name',\
+serverNbTab13Tree1['columns'] = ('No','Job_id','Originating_server','Name',\
 'Enable','Description','Start_step_id','Category','Owner',\
 'Notify_level_eventlog','Notify_level_email','Notify_level_netsend',\
 'Notify_level_page','Notify_email_operator','Notify_netsend_operator',\
@@ -2240,6 +2242,8 @@ serverNbTab13Tree1['displaycolumns'] = ('Name',\
 'Last_run_date','Last_run_time','Last_run_outcome',\
 'Next_run_date','Next_run_time','Has_step','Has_schedule',)
 
+serverNbTab13Tree1.heading("No", text="No")
+serverNbTab13Tree1.column("No", minwidth=0,width=5,anchor="w")
 serverNbTab13Tree1.heading("Job_id", text="JOBID")
 serverNbTab13Tree1.column("Job_id", minwidth=0,width=100,anchor="w")
 serverNbTab13Tree1.heading("Name", text="NAME")

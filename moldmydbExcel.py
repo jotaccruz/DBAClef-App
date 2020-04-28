@@ -31,6 +31,9 @@ def xlsxGen(excelf,section,tree,tree_name,tree_dic):
     rwarning = Rule(type="expression", dxf=dxfwarning, stopIfTrue=True)
     rwarning1 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=True)
     rwarning2 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=True)
+    rwarning3 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=False)
+    rwarning4 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=False)
+    rwarning5 = Rule(type="expression", dxf=dxfwarning, stopIfTrue=False)
 
     rcritical.formula = ['$C1="Disabled"']
     rcritical1.formula = ['$E1="Take Care"']
@@ -39,10 +42,12 @@ def xlsxGen(excelf,section,tree,tree_name,tree_dic):
     rcritical4.formula = ['$C1="BUILTIN\\Users"']
     rcritical5.formula = ['$C1="NT AUTHORITY\\SYSTEM"']
 
-
     rwarning.formula = ['$F1="Disabled"']
     #rwarning1.formula = ['$F1<>"sa"']
     rwarning2.formula = ['$D1="Required"']
+    rwarning3.formula = ['$E1="OFF"']
+    rwarning4.formula = ['$AD1="N"']
+    rwarning5.formula = ['$AE1="N"']
 
 
     thin = Side(border_style="thin", color="000000")
@@ -84,6 +89,10 @@ def xlsxGen(excelf,section,tree,tree_name,tree_dic):
             ws.conditional_formatting.add("A1:Z500", rwarning)
             #ws.conditional_formatting.add("A1:Z500", rwarning1)
             ws.conditional_formatting.add("A1:Z500", rwarning2)
+            ws.conditional_formatting.add("A1:Z500", rwarning3)
+            ws.conditional_formatting.add("A1:AG500", rwarning4)
+            ws.conditional_formatting.add("A1:AG500", rwarning5)
+
             col=col+1
         row=row+1
 
