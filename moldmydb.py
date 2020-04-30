@@ -185,9 +185,8 @@ def view_command():
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
 
-    query="SELECT srv_name as SERVER, srv_instance as INSTANCE, srv_ip1 as IP,"+\
-            "srv_ins_port as PORT, '' as USER, '' as PWD, srv_os as OS"+\
-            " FROM lgm_servers"# WHERE"+\
+    sqlexec0 = readFileFromOS(getFileUrl("InventoryTree.sql","scripts"))
+            # WHERE"+\
             #" srv_name in"+\
             #" ('SCAEDYAK02','SUSWEYAK05');"
     #print (query)
@@ -201,7 +200,7 @@ def view_command():
     mysqlpsw=pas.get()
 
     #try:
-    for row in dbservers(query,mysqlserver,mysqlusername,mysqlpsw):
+    for row in dbservers(sqlexec0,mysqlserver,mysqlusername,mysqlpsw):
         InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],\
         row[4],row[5],row[6]),tags = ('color'))
     InventoryTree.tag_configure('color', background='#aba9f8')

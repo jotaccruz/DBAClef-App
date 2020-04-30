@@ -3,6 +3,7 @@ https://www.colorhexa.com/
 
 EXE Application
 pyinstaller --windowed --onefile --add-binary "./files/moldmydb.png;files"
+ --add-data "./scripts/InventoryTree.sql;scripts"
  --add-data "./scripts/StatusTree1_0.sql;scripts"
  --add-data "./scripts/StatusTree2_0.sql;scripts"
  --add-data "./scripts/StatusTree2_1.sql;scripts"
