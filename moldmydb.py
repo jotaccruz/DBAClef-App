@@ -612,7 +612,7 @@ def get_detail_command(mode,osmode):
                     row['FreeSpace'],row['BlockSize'],"10"]
                     continue
                 if (row['DriveType'] == 3):
-                    if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
+                    if (row['BlockSize'] != 64 and row['DriveLetter'] != "C:"):
                         serverNbTab2Tree1.insert("", END, values=(row['No'],\
                         row['SystemName'],row['Name'],row['DriveLetter'],\
                         row['FileSystem'],row['Label'],row['Capacity'],\
