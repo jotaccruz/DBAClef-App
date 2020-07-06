@@ -19,8 +19,8 @@ BEGIN
 		INSERT INTO #DBmail
 		SELECT 'SQL Agent' as Component, 
 		CASE WHEN status_desc = 'Running' 
-		THEN 'Running.' 
-		ELSE 'Stopped.' 
+		THEN 'Running' 
+		ELSE 'Stopped' 
 		END AS SQLAgentStarted 
 		FROM sys.dm_server_services 
 		WHERE servicename LIKE 'SQL Server Agent%' 

@@ -10,3 +10,7 @@ conda install -c anaconda openpyxl
 conda install -c anaconda passlib
 #conda install pandas
 #python setup.py install / https://github.com/reingart/pyfpdf/releases
+
+Other
+conda install -c anaconda beautifulsoup4
+conda install -c anaconda html5lib

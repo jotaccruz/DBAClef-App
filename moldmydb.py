@@ -762,7 +762,7 @@ def get_detail_command(mode,osmode):
                 row['FreeSpace'],row['BlockSize'],"10"]
                 continue
             if (row['DriveType'] == 3):
-                if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
+                if (row['BlockSize'] != 64 and row['DriveLetter'] != "C:"):
                     serverNbTab2Tree1.insert("", END, values=(row['No'],\
                     row['SystemName'],row['Name'],row['DriveLetter'],\
                     row['FileSystem'],row['Label'],row['Capacity'],\
@@ -890,7 +890,7 @@ def get_detail_command(mode,osmode):
     try:
         for row in mssqldetail(selected_row['Ip'],selected_row['Port'],\
         "master",selected_row['User'],selected_row['Pwd'],sqlexec1):
-            version = mssqlversioncomplete(row[0])
+            version = BeatifulSoup_Parser(row[0])
             #version = mssqlversioncomplete("12.0.6259")
             #print (version)
         i=1
@@ -1699,7 +1699,7 @@ InventoryButton.grid(row=0, column=1, sticky="e", padx=5, pady=5,)
 #ExitButton.grid(row=3, column=2, sticky="s", padx=5, pady=5)
 
 #TreeViews
-InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=3)
+InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
 InventoryTree.grid(row=4,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
 InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd',\
 'Os')
@@ -2084,7 +2084,7 @@ mailButton.config(state=DISABLED)
 #--BACKUP COMPRESSION
 #--AD HOC
 #--MAXDOP
-GenCheckLabel=ttk.Label(serverNbTab7,text="RemAdmin/BkpCompress/Adhoc/MaxDop")
+GenCheckLabel=ttk.Label(serverNbTab7,text="RemAdmin / BkpCompress / Adhoc / MaxDop")
 GenCheckLabel.grid(row=0,column=0,padx=5, pady=5, sticky='w',)
 
 serverNbTab7Tree2=ttk.Treeview(serverNbTab7,show='headings',height=4, )

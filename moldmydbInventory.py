@@ -93,7 +93,6 @@ class InventoryFeeds():
         self.srv_ins_portInput=ttk.Entry(self.InventoryFrameInput,textvariable=self.srv_ins_port)
         self.srv_ins_portInput.grid(row=0,column=5,padx=5, pady=5,sticky='w')
 
-
         self.srv_ip1=StringVar()
         self.srv_ip1Input=ttk.Entry(self.InventoryFrameInput,textvariable=self.srv_ip1)
         self.srv_ip1Input.grid(row=1,column=1,padx=5, pady=5,sticky='w')

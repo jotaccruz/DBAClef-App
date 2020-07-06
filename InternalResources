@@ -70,6 +70,3 @@ pyinstaller --windowed --onefile --add-binary "./files/moldmydb.png;files"
  --add-data "./scripts/ifiButton_4.sql;scripts"
  --add-data "./scripts/ifiButton_5.sql;scripts"
  --i ./files/moldmydb.ico moldmydb.py
-
-Other
-conda install -c anaconda beautifulsoup4

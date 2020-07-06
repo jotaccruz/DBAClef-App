@@ -11,4 +11,4 @@ ELSE 'Some days'
 END AS Notifications 
 FROM msdb.dbo.sysoperators 
 WHERE enabled = 1
-and name = 'DBA TICA'
+--and name = 'DBA TICA'
