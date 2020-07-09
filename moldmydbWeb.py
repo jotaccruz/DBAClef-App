@@ -14,6 +14,79 @@ Created on Wed Dec  4 16:20:35 2019
 import requests
 from bs4 import BeautifulSoup
 
+def BeatifulSoup_Parser(version):
+    URL = 'https://sqlserverbuilds.blogspot.com/index.html'
+    r = requests.get(URL)
+    HtmlPage = r.content
+
+    page_html_text = BeautifulSoup(HtmlPage, "html5lib")
+    div_areas_with_important_tables = page_html_text.find_all(lambda tag: tag.name=='div' and tag.get('class') == ['oxa'])
+
+    columns_title_important_tables = div_areas_with_important_tables[0].find_all("th")
+
+    all_data = []
+
+    for item in div_areas_with_important_tables:
+        rows_important_tables = item.find_all("tr")
+        for rows in rows_important_tables:
+            columns_data_important_tables = rows.find_all("td")
+            data_values = []
+            column=1
+            for data in columns_data_important_tables:
+                data_values.append(data.get_text())
+                if column==6:
+                    link = data.find('a', href=True)
+                    if link:
+                        data_values.append(link.get('href'))
+                    else:
+                        data_values.append('')
+                column = column + 1
+            all_data.append(data_values)
+
+    all_versions = []
+    for items in all_data:
+        if len(items) != 0:
+            all_versions.append(items)
+
+    itsversionlist = version.split('.')
+    itsversionstr = ''.join(itsversionlist)
+
+    animals = []
+    for element in all_versions:
+        myversionlist = element[0].split('.')
+        myversionstr = ''.join(myversionlist)
+
+        if int(itsversionlist[0])==int(myversionlist[0]):
+            if int(itsversionlist[1])==int(myversionlist[1]):
+                if int(myversionlist[2])>int(itsversionlist[2]):
+                    animals.append(element)
+                else:
+                    if int(myversionlist[2])==int(itsversionlist[2]):
+                        if int(myversionlist[3])>int(itsversionlist[3]):
+                            animals.append(element)
+                    
+    return animals
+
+    # rows_important_tables = div_areas_with_important_tables[6].find_all("tr")
+    # columns_title_important_tables = rows_important_tables[0].find_all("th")
+
+    # for items in columns_title_important_tables:
+        # print (items.contents[0])
+
+    # for columns in rows_important_tables:
+    #     columns_data_important_tables = columns.find_all("td")
+    #     for tags in columns_data_important_tables:
+    #         print (tags.get_text())
+
+# version = BeatifulSoup_Parser(htmldoc)
+
+# [[row[i] for row in version] for i in range(7)]
+#
+# printing = BeatifulSoup_Parser('15.0.2000.5')
+# printing.sort()
+# print(printing)
+
+
 def mssqlversion(version):
     URL = 'https://sqlcollaborative.github.io/assets/dbatools-buildref-index.json'
     page = requests.get(URL).json()
@@ -32,7 +105,7 @@ def mssqlversion(version):
 def mssqlversioncomplete(version):
     URL = 'https://sqlcollaborative.github.io/assets/dbatools-buildref-index.json'
     page = requests.get(URL).json()
-    print("getting")
+    # print("getting")
     animals = []
     for element in page:
         a = page[element]
@@ -72,62 +145,3 @@ def savehtml(html, path):
 def openhtml(path):
     with open(path,'rb') as f:
         return f.read()
-
-def BeatifulSoup_Parser(version):
-    URL = 'https://sqlserverbuilds.blogspot.com/index.html'
-    r = requests.get(URL)
-    HtmlPage = r.content
-
-    page_html_text = BeautifulSoup(HtmlPage, "html5lib")
-    div_areas_with_important_tables = page_html_text.find_all(lambda tag: tag.name=='div' and tag.get('class') == ['oxa'])
-
-    rows_important_tables = div_areas_with_important_tables[0].find_all("th")
-    # columns_title_important_tables = rows_important_tables[0]
-    # for title in columns_title_important_tables:
-    #     print (title.get_text())
-
-    all_data = []
-
-    for item in div_areas_with_important_tables:
-        rows_important_tables = item.find_all("tr")
-        for rows in rows_important_tables:
-            columns_data_important_tables = rows.find_all("td")
-            data_values = []
-            data_values
-            for data in columns_data_important_tables:
-                data_values.append(data.get_text())
-            all_data.append(data_values)
-
-    all_versions = []
-    for items in all_data:
-        if len(items) != 0:
-            all_versions.append(items[0])
-
-
-    animals = []
-    for element in all_versions:
-        if (element > version and element[:element.index('.')] == version[:version.index('.')]):
-            #animals.append(dic["Version"])
-            animals.append(element)
-
-
-    return animals
-
-    # rows_important_tables = div_areas_with_important_tables[6].find_all("tr")
-    # columns_title_important_tables = rows_important_tables[0].find_all("th")
-
-    # for items in columns_title_important_tables:
-        # print (items.contents[0])
-
-    # for columns in rows_important_tables:
-    #     columns_data_important_tables = columns.find_all("td")
-    #     for tags in columns_data_important_tables:
-    #         print (tags.get_text())
-
-# version = BeatifulSoup_Parser(htmldoc)
-
-# [[row[i] for row in version] for i in range(7)]
-#
-# printing = BeatifulSoup_Parser('15.0.2000.5')
-# printing.sort()
-# print(printing)

@@ -47,6 +47,12 @@ mysqlpsw=''
 #Funtions----------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #---
+
+def copyTextToClipboard(tree, event=None):
+    window.clipboard_clear()
+    Url = tree.item(tree.focus())["values"][6]
+    window.clipboard_append(Url)  # append new value to clipbaord
+
 def cleanallone():
     cleanall(VersionTree1)
     cleanall(StatusTree1)
@@ -892,48 +898,17 @@ def get_detail_command(mode,osmode):
         "master",selected_row['User'],selected_row['Pwd'],sqlexec1):
             version = BeatifulSoup_Parser(row[0])
             #version = mssqlversioncomplete("12.0.6259")
-            #print (version)
-        i=1
+            # print (version)
         list=[]
-        list=[str(i+4),'10','10','10','10','10','10']
+        i=1
+        list=[str(i+4),'10','10','10','10','10']
         global_treeview_dic['StatusTree4']=list
-        i=2
-        for dic in version:
-            list=[]
-            list.append(str(i))
-            if 'Version' in dic:
-                list.append(dic['Version'])
-            else:
-                list.append('')
-
-            if 'SupportedUntil' in dic:
-                list.append(dic['SupportedUntil'])
-            else:
-                list.append('')
-
-            if 'Name' in dic:
-                list.append(dic['Name'])
-            else:
-                list.append('')
-
-            if 'SP' in dic:
-                list.append(dic['SP'])
-            else:
-                list.append('')
-
-            if 'CU' in dic:
-                list.append(dic['CU'])
-            else:
-                list.append('')
-
-            if 'KBList' in dic:
-                list.append(dic['KBList'])
-            else:
-                list.append('')
-            StatusTree4.insert("",END,values=(list),tags = ('need'))
+        for items in version:
+            items.append(str(i))
+            StatusTree4.insert("",END,values=(items),tags = ('need'))
             i=i+1
     except:
-        StatusTree4.insert("", END, values=("1","Error!!",'','','','',''),\
+        StatusTree4.insert("", END, values=("Error!!",'','','','',"1"),\
         tags = ('need',))
         pass
 
@@ -1784,28 +1759,28 @@ StatusTree3.heading("AlwaysOnEnabled", text="ALWAYS ON",)
 StatusTree3.column("Warning", minwidth=0,width=100)
 StatusTree3.heading("Warning", text="WARNING",)
 
-StatusTree4=ttk.Treeview(statusframe,show='headings',height=3)
+StatusTree4=ttk.Treeview(statusframe,show='headings',height=5)
 StatusTree4.grid(row=6,column=0,padx=5, pady=5,rowspan=2,columnspan=5,\
 sticky="w")
-StatusTree4['columns'] = ('No','Version', 'Eos', 'Name', 'Sp', 'Cu', 'KBList',)
-StatusTree4['displaycolumns'] = ('Version', 'Eos', 'Name', 'Sp', 'Cu', \
-'KBList', )
-StatusTree4.column("No", minwidth=0,width=5)
-StatusTree4.heading("No", text="No",)
-StatusTree4.column("Version", minwidth=0,width=75)
-StatusTree4.heading("Version", text="VERSION",)
-StatusTree4.column("Eos", minwidth=0,width=70)
-StatusTree4.heading("Eos", text="EOS",)
-StatusTree4.column("Name", minwidth=0,width=70)
-StatusTree4.heading("Name", text="NAME",)
-StatusTree4.column("Sp", minwidth=0,width=50)
-StatusTree4.heading("Sp", text="SP",)
-StatusTree4.column("Cu", minwidth=0,width=45)
-StatusTree4.heading("Cu", text="CU",)
-StatusTree4.column("KBList", minwidth=0,width=60)
-StatusTree4.heading("KBList", text="KBLIST",)
 
+StatusTree4['columns'] = ('Build', 'AlternativeBuilds', 'FileVersion', \
+'Q', 'KB', 'KB/Description','Url','ReleaseDate','No',)
+StatusTree4['displaycolumns'] = ('No','Build', 'KB/Description',\
+'ReleaseDate', )
+StatusTree4.column("No", minwidth=0,width=20)
+StatusTree4.heading("No", text="#",)
+StatusTree4.column("Build", minwidth=0,width=70)
+StatusTree4.heading("Build", text="BUILD",)
+# StatusTree4.column("FileVersion", minwidth=0,width=100)
+# StatusTree4.heading("FileVersion", text="FILE VERSION",)
+StatusTree4.column("KB/Description", minwidth=0,width=320)
+StatusTree4.heading("KB/Description", text="KB DESCRIPTION",)
+# StatusTree4.column("Url", minwidth=0,width=125)
+# StatusTree4.heading("Url", text="REFERENCE",)
+StatusTree4.column("ReleaseDate", minwidth=0,width=100)
+StatusTree4.heading("ReleaseDate", text="RELEASE DATE",)
 
+StatusTree4.bind('<Double-Button-1>',lambda event, t=StatusTree4: copyTextToClipboard(t))
 
 detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
 detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2, sticky="w")
