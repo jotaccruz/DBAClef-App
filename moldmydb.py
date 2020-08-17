@@ -38,6 +38,8 @@ from datetime import date
 from openpyxl import Workbook
 import moldmydbInventory
 from moldmydbInventory import *
+import moldmydbTooltips
+from moldmydbTooltips import *
 
 window=Tk()
 global_treeview_dic = {}
@@ -139,14 +141,17 @@ def Reports(global_treeview_dic):
     global_treeview_dic)
     excelf=xlsxGen(excelf,'Databases',serverNbTab8Tree1,'serverNbTab8Tree1',\
     global_treeview_dic)
-    #excelf=xlsxGen(excelf,'Transaction Log',serverNbTab12Tree1)
+    excelf=xlsxGen(excelf,'Transaction Log',serverNbTab12Tree1,\
+    'serverNbTab12Tree1',global_treeview_dic)
     excelf=xlsxGen(excelf,'Sys Admin',serverNbTab10Tree1,'serverNbTab10Tree1',\
     global_treeview_dic)
 
     excelf=xlsxGen(excelf,'Jobs',serverNbTab13Tree1,'serverNbTab13Tree1',\
     global_treeview_dic)
 
-    #excelf=xlsxGen(excelf,'General Check',serverNbTab11Tree1)
+    excelf=xlsxGen(excelf,'General Check',serverNbTab7Tree2,\
+    'serverNbTab7Tree2',global_treeview_dic)
+
     #excelf=xlsxGen(excelf,'DBA Tools',serverNbTab9Tree1)
 
     excelf.save(server+'-'+today+'.xlsx')
@@ -1214,13 +1219,19 @@ def get_detail_command(mode,osmode):
 
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[2]=='OFF'):
-            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),\
-            tags = ('need'))
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab7Tree2']=[row[0],row[1],\
+            row[2],row[3]]
+            continue
+
+        if (row[3]=='OFF'):
+            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],),tags = ('need'))
             genchkButton.config(state=NORMAL)
         else:
-            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),\
-            tags = ('good'))
+            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],),tags = ('good'))
     serverNbTab7Tree2.tag_configure('need', background='#f5e45e')
 
 #--IFI STATUS
@@ -1286,12 +1297,17 @@ def get_detail_command(mode,osmode):
     for rows in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec1,
                            sqlexec2):
-        if (rows[2]>90):
-            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],\
-            rows[3], ),tags = ('need'))
+        if (rows[0]==1):
+            global_treeview_dic['serverNbTab12Tree1']=[rows[0],rows[1],\
+            rows[2],rows[3],rows[4]]
+            continue
+
+        if (rows[3]>90):
+            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],rows[3],\
+            rows[4], ),tags = ('need'))
         else:
-            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],\
-            rows[3], ),tags = ('good'))
+            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],rows[3],\
+            rows[4], ),tags = ('good'))
 
     serverNbTab12Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab12Tree1.tag_configure('good', background='#aef38c')
@@ -1759,6 +1775,8 @@ StatusTree3.heading("AlwaysOnEnabled", text="ALWAYS ON",)
 StatusTree3.column("Warning", minwidth=0,width=100)
 StatusTree3.heading("Warning", text="WARNING",)
 
+StatusTree3.bind('<Double-Button-1>',lambda event, t=StatusTree3: copyTextToClipboard(t))
+
 StatusTree4=ttk.Treeview(statusframe,show='headings',height=5)
 StatusTree4.grid(row=6,column=0,padx=5, pady=5,rowspan=2,columnspan=5,\
 sticky="w")
@@ -1781,6 +1799,7 @@ StatusTree4.column("ReleaseDate", minwidth=0,width=100)
 StatusTree4.heading("ReleaseDate", text="RELEASE DATE",)
 
 StatusTree4.bind('<Double-Button-1>',lambda event, t=StatusTree4: copyTextToClipboard(t))
+# StatusTree4_ttp = (StatusTree4, "A green button")
 
 detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
 detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2, sticky="w")
@@ -1824,6 +1843,8 @@ serverNbTab1Tree1.column("NetBiosName", minwidth=0,width=100)
 serverNbTab1Tree1.heading("InstanceName", text="INSTANCENAME")
 serverNbTab1Tree1.column("InstanceName", minwidth=0,width=150)
 
+serverNbTab1Tree1.bind('<Double-Button-1>',lambda event, t=serverNbTab1Tree1: copyTextToClipboard(t))
+
 #Services
 serverNbTab1Tree2=ttk.Treeview(serverNbTab1,show='headings',height=9,)
 serverNbTab1Tree2.grid(row=1,column=0,padx=5, pady=5, sticky='w')
@@ -1849,6 +1870,8 @@ serverNbTab1Tree2.heading("State", text="STATE")
 serverNbTab1Tree2.column("State", minwidth=0,width=60)
 #serverNbTab1Tree2.heading("PathName", text="PATH")
 #serverNbTab1Tree2.column("PathName", minwidth=0,width=180)
+
+serverNbTab1Tree2.bind('<Double-Button-1>',lambda event, t=serverNbTab1Tree2: copyTextToClipboard(t))
 
 #Disks Tab
 serverNbTab2Tree1=ttk.Treeview(serverNbTab2,show='headings',height=7,)
@@ -2064,7 +2087,7 @@ GenCheckLabel.grid(row=0,column=0,padx=5, pady=5, sticky='w',)
 
 serverNbTab7Tree2=ttk.Treeview(serverNbTab7,show='headings',height=4, )
 serverNbTab7Tree2.grid(row=1,column=0,padx=5, pady=5, sticky='w', rowspan=2)
-serverNbTab7Tree2['columns'] = ('Name','Desc','Status',)
+serverNbTab7Tree2['columns'] = ('No','Name','Desc','Status',)
 serverNbTab7Tree2['displaycolumns'] = ('Name','Desc','Status',)
 serverNbTab7Tree2.heading("Name", text="NAME")
 serverNbTab7Tree2.column("Name", minwidth=0,width=245)
@@ -2150,6 +2173,9 @@ serverNbTab8Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab8Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab8Tree1.heading("LRWait", text="LRWAIT")
 serverNbTab8Tree1.column("LRWait", minwidth=0,width=75,anchor="w")
+
+serverNbTab8Tree1.bind('<Double-Button-1>',lambda event, t=serverNbTab8Tree1: copyTextToClipboard(t))
+
 scrollbar_vertical = ttk.Scrollbar(serverNbTab8, orient="vertical", \
                                    command=serverNbTab8Tree1.yview)
 scrollbar_vertical.grid(row=0, column=1, sticky="ens")
@@ -2164,7 +2190,7 @@ saButton.config(state=DISABLED)
 #--Transaction Log Usage
 serverNbTab12Tree1=ttk.Treeview(serverNbTab12,show='headings',height=12, )
 serverNbTab12Tree1.grid(row=0,column=0,padx=5, pady=5, )
-serverNbTab12Tree1['columns'] = ('Database','LogSizeMB','LogSpaceUsed',\
+serverNbTab12Tree1['columns'] = ('No','Database','LogSizeMB','LogSpaceUsed',\
 'Status',)
 serverNbTab12Tree1['displaycolumns'] = ('Database','LogSizeMB','LogSpaceUsed',\
 'Status')

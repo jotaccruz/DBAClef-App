@@ -14,4 +14,4 @@ CONVERT(nvarchar(250),len(CONVERT(nvarchar(250),SERVERPROPERTY('servername')))) 
 CONVERT(nvarchar(250),len(CONVERT(nvarchar(250),SERVERPROPERTY('machinename')))) AS 'Windows_Name',
 CONVERT(nvarchar(250),len(CONVERT(nvarchar(250),SERVERPROPERTY('ComputerNamePhysicalNetBIOS')))) AS 'NetBIOS_Name',
 CONVERT(nvarchar(250),len(CONVERT(nvarchar(250),ISNULL(SERVERPROPERTY('instanceName'),'DEFAULT')))) AS 'InstanceName',
-CONVERT(nvarchar(250),len(CONVERT(nvarchar(250),SERVERPROPERTY('IsClustered')))) AS 'IsClustered') temp 
+CONVERT(nvarchar(250),len(CONVERT(nvarchar(250),SERVERPROPERTY('IsClustered')))) AS 'IsClustered') temp
