@@ -1,18 +1,18 @@
 """
 Python 3.5.6
 Created on Fri Nov  8 10:57:06 2019
-A program that helps DBA to apply best practice to SQL Server:
+A program that helps DBA to apply Standard  configurations to SQL Server:
 
-@author: juan.cruz2
+@author: JuanCarlosCruz
 
 User can:
     List Current status
     Search an specific configuration
     Set an specific configuration
     Some utilities
-    Close
 """
 
+#Libraries
 import os
 import tkinter as tk
 from tkinter import *
@@ -36,12 +36,25 @@ import moldmydbExcel
 from moldmydbExcel import *
 from datetime import date
 from openpyxl import Workbook
+import moldmydbInventory
+from moldmydbInventory import *
+import moldmydbTooltips
+from moldmydbTooltips import *
 
 window=Tk()
 global_treeview_dic = {}
+mysqlserver=''
+mysqlusername=''
+mysqlpsw=''
 #Funtions----------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #---
+
+def copyTextToClipboard(tree, event=None):
+    window.clipboard_clear()
+    Url = tree.item(tree.focus())["values"][6]
+    window.clipboard_append(Url)  # append new value to clipbaord
+
 def cleanallone():
     cleanall(VersionTree1)
     cleanall(StatusTree1)
@@ -75,6 +88,17 @@ def cleanallone():
     cleanall(serverNbTab10Tree1)
     cleanall(serverNbTab12Tree1)
     cleanall(serverNbTab12Tree2)
+    cleanall(serverNbTab13Tree1)
+
+def Inventory_AddServer(window):
+    Interfaz = InventoryFeeds(window,mysqlserver,mysqlusername,mysqlpsw)
+
+def RemServer():
+    Pass
+
+def select_notebooktab(Tab):
+    serverNb.select(Tab)
+
 
 def getRbselected(mode):
     if (mode == 0):
@@ -91,31 +115,14 @@ def cleanall(widget):
 
 #---
 
-def getFileUrl(filename,directory):
-    if getattr(sys, 'frozen', False): # Running as compiled
-        running_dir = sys._MEIPASS + "/" + directory + "/" #"/files/" # Same path name than pyinstaller option
-    else:
-        running_dir = "./" + directory + "/" # Path name when run with Python interpreter
-    FileName = running_dir + filename #"moldmydb.png"
-    return FileName
+def About():
+    tkinter.messagebox.showinfo(title="moldmydb", message="Telus International\
+    - MoldMydb v 1.0",)
 
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-
-def About(global_treeview_dic):
+def Reports(global_treeview_dic):
     today = date.today().strftime("%m.%d.%y")
     excelf = Workbook()
     #pdf = FPDF()
-    tkinter.messagebox.showinfo(title="moldmydb", message="Telus International\
-    - MoldMydb v 1.0",)
     for i in serverNbTab1Tree1.get_children():
         server=(serverNbTab1Tree1.item(i)["values"][3])
     excelf=xlsxGen(excelf,'Missing Updates',StatusTree4,'StatusTree4',\
@@ -126,16 +133,31 @@ def About(global_treeview_dic):
     global_treeview_dic)
     excelf=xlsxGen(excelf,'Page File',serverNbTab3Tree1,'serverNbTab3Tree1',\
     global_treeview_dic)
-    #excelf=xlsxGen(excelf,'Default Paths',serverNbTab4Tree1)
-    #excelf=xlsxGen(excelf,'DB Mail',serverNbTab6Tree1)
-    #excelf=xlsxGen(excelf,'Alerts',serverNbTab7Tree3)
-    #excelf=xlsxGen(excelf,'Databases',serverNbTab8Tree1)
-    #excelf=xlsxGen(excelf,'Transaction Log',serverNbTab12Tree1)
-    #excelf=xlsxGen(excelf,'Sys Admin',serverNbTab10Tree1)
-    #excelf=xlsxGen(excelf,'General Check',serverNbTab11Tree1)
+    excelf=xlsxGen(excelf,'Default Paths',serverNbTab4Tree1,\
+    'serverNbTab4Tree1',global_treeview_dic)
+    excelf=xlsxGen(excelf,'DB Mail',serverNbTab6Tree1,'serverNbTab6Tree1',\
+    global_treeview_dic)
+    excelf=xlsxGen(excelf,'Alerts',serverNbTab5Tree3,'serverNbTab5Tree3',\
+    global_treeview_dic)
+    excelf=xlsxGen(excelf,'Databases',serverNbTab8Tree1,'serverNbTab8Tree1',\
+    global_treeview_dic)
+    excelf=xlsxGen(excelf,'Transaction Log',serverNbTab12Tree1,\
+    'serverNbTab12Tree1',global_treeview_dic)
+    excelf=xlsxGen(excelf,'Sys Admin',serverNbTab10Tree1,'serverNbTab10Tree1',\
+    global_treeview_dic)
+
+    excelf=xlsxGen(excelf,'Jobs',serverNbTab13Tree1,'serverNbTab13Tree1',\
+    global_treeview_dic)
+
+    excelf=xlsxGen(excelf,'General Check',serverNbTab7Tree2,\
+    'serverNbTab7Tree2',global_treeview_dic)
+
     #excelf=xlsxGen(excelf,'DBA Tools',serverNbTab9Tree1)
 
     excelf.save(server+'-'+today+'.xlsx')
+    success_handler("Standard Setup Report","Report was generated successfuly")
+
+
     #pdffinal.output('Assessment-'+server+'-'+today+'.pdf', 'F')
 
 def hello():
@@ -168,12 +190,14 @@ def basic_analyze_command():
 
 #---
 def view_command():
+    global mysqlserver
+    global mysqlusername
+    global mysqlpsw
     for i in InventoryTree.get_children():
         InventoryTree.delete(i)
 
-    query="SELECT srv_name as SERVER, srv_instance as INSTANCE, srv_ip as IP,"+\
-            "srv_ins_port as PORT, '' as USER, '' as PWD, srv_os as OS"+\
-            " FROM lgm_servers"# WHERE"+\
+    sqlexec0 = readFileFromOS(getFileUrl("InventoryTree.sql","scripts"))
+            # WHERE"+\
             #" srv_name in"+\
             #" ('SCAEDYAK02','SUSWEYAK05');"
     #print (query)
@@ -187,7 +211,7 @@ def view_command():
     mysqlpsw=pas.get()
 
     #try:
-    for row in dbservers(query,mysqlserver,mysqlusername,mysqlpsw):
+    for row in dbservers(sqlexec0,mysqlserver,mysqlusername,mysqlpsw):
         InventoryTree.insert("", END, values=(row[0],row[1],row[2],row[3],\
         row[4],row[5],row[6]),tags = ('color'))
     InventoryTree.tag_configure('color', background='#aba9f8')
@@ -516,7 +540,7 @@ def get_ifitest_command(mode):
     #    error_handler("Error","IFI testing failed")
 
 #---Main
-def get_detail_command(mode):
+def get_detail_command(mode,osmode):
     global global_treeview_dic
     if (mode == 1):
         selected_row = {
@@ -542,110 +566,137 @@ def get_detail_command(mode):
         except IndexError:
             pass
 
-#Tab Status
-#Last startup
-    sqlexec1 = readFileFromOS(getFileUrl("StatusTree1_0.sql","scripts"))
-    for i in StatusTree1.get_children():
-        StatusTree1.delete(i)
+    if (osmode == 1):
+    #Tab Services----------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1):
-        StatusTree1.insert("", END, values=(row[0],row[1]))
+    #Services
+        for i in serverNbTab1Tree2.get_children():
+            serverNbTab1Tree2.delete(i)
 
-#CPUs
-    sqlexec1 = readFileFromOS(getFileUrl("StatusTree2_0.sql","scripts"))
+        try:
+            for row in mssqlinfo(mode, selected_row['Ip'], wmiuser, wmipass):
+                if (row['No']=='1'):
+                    global_treeview_dic['serverNbTab1Tree2']=[str(int(row['No'])+4),row['SystemName'],\
+                    row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status']]
+                    continue
 
-    sqlexec3 = readFileFromOS(getFileUrl("StatusTree2_1.sql","scripts"))
+                if (row['State'] == "Stopped" or row['State'] == "Disabled"):
+                    serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                    row['SystemName'],row['DisplayName'],row['Description'],\
+                    row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                    row['Status'],),tags = ('need',))
+                    continue
 
-    for i in StatusTree2.get_children():
-        StatusTree2.delete(i)
+                if (row['State'] == "Running" and row['DisplayName'].find("CEIP")>-1):
+                    serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                    row['SystemName'],row['DisplayName'],row['Description'],\
+                    row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                    row['Status'],),tags = ('critical',))
+                    continue
 
-    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
-                           sqlexec3):
-        StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
+                serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                row['SystemName'],row['DisplayName'],row['Description'],\
+                row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                row['Status'],),tags = ('good',))
+        except:
+            global_treeview_dic['serverNbTab1Tree2']=[5,15,25,50,15,15,25,15,15,25]
+            serverNbTab1Tree2.insert("", END, values=("1","Missing","Not available"\
+            ,"","","","","","",),tags = ('critical',))
+            pass
 
-#Version
-    sqlexec1 = readFileFromOS(getFileUrl("StatusTree3_0.sql","scripts"))
-    for i in StatusTree3.get_children():
-        StatusTree3.delete(i)
+        serverNbTab1Tree2.tag_configure('need', background='#f5e45e')
+        serverNbTab1Tree2.tag_configure('critical', background='#f86d7e')
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1):
-        StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],\
-        row[5]))
+    #Tab Disks---------------------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-#Is Supported?
+        for i in serverNbTab2Tree1.get_children():
+            serverNbTab2Tree1.delete(i)
 
-    for i in StatusTree3.get_children():
-        if (float(StatusTree3.item(i)["values"][0][0:2])<11):
-            VersionTree1.insert("", END, values=("So\\ Sorry!!!\\ Version\\ \
-            is\\ not\\ supported.\\ Some\\ functionalities\\ may\\ don't\\ work\
-            "), tags = ('need',))
-        else:
-            VersionTree1.insert("", END, values=("Version\\ is\\ supported."), \
-            tags = ('good',))
+        try:
+            for row in diskinfo(mode, selected_row['Ip'], wmiuser, wmipass):
+                if (row['No']=='1'):
+                    global_treeview_dic['serverNbTab2Tree1']=[str(int(row['No'])+4)\
+                    ,row['SystemName'],row['Name'],row['DriveLetter'],\
+                    row['FileSystem'],row['Label'],row['Capacity'],\
+                    row['FreeSpace'],row['BlockSize'],"10"]
+                    continue
+                if (row['DriveType'] == 3):
+                    if (row['BlockSize'] != 64 and row['DriveLetter'] != "C:"):
+                        serverNbTab2Tree1.insert("", END, values=(row['No'],\
+                        row['SystemName'],row['Name'],row['DriveLetter'],\
+                        row['FileSystem'],row['Label'],row['Capacity'],\
+                        row['FreeSpace'],row['BlockSize'],"64"),tags = ('need',))
+                    else:
+                        serverNbTab2Tree1.insert("", END, values=(row['No'],\
+                        row['SystemName'],row['Name'],row['DriveLetter'],\
+                        row['FileSystem'],row['Label'],row['Capacity'],\
+                        row['FreeSpace'],row['BlockSize'],"N/A"),tags = ('good',))
 
-    VersionTree1.tag_configure('need', background='#f86d7e')
+            serverNbTab2Tree1.tag_configure('need', background='#f5e45e')
 
-#Missing updates
+        except:
+            global_treeview_dic['serverNbTab2Tree1']=[5,15,25,15,15,15,25,15,15,25]
+            serverNbTab2Tree1.insert("", END, values=("1","Missing",\
+                                                      "Not available",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      "",\
+                                                      ""),\
+            tags = ('need',))
+            serverNbTab2Tree1.tag_configure('need', background='#f86d7e')
+            pass
 
-    sqlexec1=readFileFromOS(getFileUrl("StatusTree4_0.sql","scripts"))
 
-    for i in StatusTree4.get_children():
-        StatusTree4.delete(i)
+    #Tab Page File-----------------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-    try:
-        for row in mssqldetail(selected_row['Ip'],selected_row['Port'],\
-        "master",selected_row['User'],selected_row['Pwd'],sqlexec1):
-            version = mssqlversioncomplete(row[0])
-            #version = mssqlversioncomplete("12.0.6259")
-            #print (version)
-        i=1
-        list=[]
-        list=[str(i+4),'10','10','10','10','10','10']
-        global_treeview_dic['StatusTree4']=list
-        i=2
-        for dic in version:
-            list=[]
-            list.append(str(i))
-            if 'Version' in dic:
-                list.append(dic['Version'])
-            else:
-                list.append('')
+        for i in serverNbTab3Tree1.get_children():
+            serverNbTab3Tree1.delete(i)
 
-            if 'SupportedUntil' in dic:
-                list.append(dic['SupportedUntil'])
-            else:
-                list.append('')
+        try:
+            for row in pageinfo(mode, selected_row['Ip'], wmiuser, wmipass):
+                if (row['No']=='1'):
+                    global_treeview_dic['serverNbTab3Tree1']=[str(int(row['No'])+4)\
+                    ,row['SystemName'],\
+                    row['Automatic'],\
+                    row['Caption'],\
+                    row['Status'],\
+                    row['CurrentUsage'],\
+                    row['PeakUsage'],\
+                    row['InitialSize'],\
+                    row['MaximumSize']]
+                    continue
+                serverNbTab3Tree1.insert("", END, values=(row['No'],\
+                                                              row['SystemName'],\
+                                                              row['Automatic'],\
+                                                              row['Caption'],\
+                                                              row['Status'],\
+                                                              row['CurrentUsage'],\
+                                                              row['PeakUsage'],\
+                                                              row['InitialSize'],\
+                                                              row['MaximumSize']),\
+                tags = ('good',))
+        except:
+            global_treeview_dic['serverNbTab3Tree1']=[5,15,25,25,15,15,25,15,15]
+            serverNbTab3Tree1.insert("", END, values=("1",
+                                                      "Missing",
+                                                      "Not available",
+                                                      "",
+                                                      "",
+                                                      "",
+                                                      "",
+                                                      "",
+                                                      ""),
+            tags = ('need',))
+            pass
+        serverNbTab3Tree1.tag_configure('need', background='#f86d7e')
 
-            if 'Name' in dic:
-                list.append(dic['Name'])
-            else:
-                list.append('')
-
-            if 'SP' in dic:
-                list.append(dic['SP'])
-            else:
-                list.append('')
-
-            if 'CU' in dic:
-                list.append(dic['CU'])
-            else:
-                list.append('')
-
-            if 'KBList' in dic:
-                list.append(dic['KBList'])
-            else:
-                list.append('')
-            StatusTree4.insert("",END,values=(list),tags = ('need'))
-            i=i+1
-    except:
-        StatusTree4.insert("", END, values=('1','Missing','','','','',''),tags = ('need',))
-        pass
-
-    StatusTree4.tag_configure('need', background='#f86d7e')
-
+        return
 #Tab Services----------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -661,13 +712,14 @@ def get_detail_command(mode):
             global_treeview_dic['serverNbTab1Tree1']=[row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6]]
             continue
-        if (row[2]!=row[3]):
+        if (row[1]!=row[2]):
             serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6],),tags = ('need'))
         else:
             serverNbTab1Tree1.insert("", END, values=(row[0],row[1],row[2],\
             row[3],row[4],row[5],row[6],),tags = ('good'))
     serverNbTab1Tree1.tag_configure('need', background='#f5e45e')
+
 #Services
     for i in serverNbTab1Tree2.get_children():
         serverNbTab1Tree2.delete(i)
@@ -678,20 +730,33 @@ def get_detail_command(mode):
                 global_treeview_dic['serverNbTab1Tree2']=[str(int(row['No'])+4),row['SystemName'],\
                 row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status']]
                 continue
-            if (row['State'] == "Stopped"):
-                serverNbTab1Tree2.insert("", END, values=(row['No'],row['SystemName'],\
-                row['DisplayName'],row['Description'],row['Started'],row['StartMode'],row['StartName'],row['State'],row['Status'],),tags = ('need',))
-            else:
-                serverNbTab1Tree2.insert("", END, values=(row['No'],row['SystemName'],\
-                row['DisplayName'],row['Description'],row['Started'],\
-                row['StartMode'],row['StartName'],row['State'],row['Status'],),\
-                tags = ('good',))
+
+            if (row['State'] == "Stopped" or row['State'] == "Disabled"):
+                serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                row['SystemName'],row['DisplayName'],row['Description'],\
+                row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                row['Status'],),tags = ('need',))
+                continue
+
+            if (row['State'] == "Running" and row['DisplayName'].find("CEIP")>-1):
+                serverNbTab1Tree2.insert("", END, values=(row['No'],\
+                row['SystemName'],row['DisplayName'],row['Description'],\
+                row['Started'],row['StartMode'],row['StartName'],row['State'],\
+                row['Status'],),tags = ('critical',))
+                continue
+
+            serverNbTab1Tree2.insert("", END, values=(row['No'],\
+            row['SystemName'],row['DisplayName'],row['Description'],\
+            row['Started'],row['StartMode'],row['StartName'],row['State'],\
+            row['Status'],),tags = ('good',))
     except:
-        serverNbTab1Tree2.insert("", END, values=("",'1','Missing','','','','','',\
-        '',),tags = ('need',))
+        global_treeview_dic['serverNbTab1Tree2']=[5,15,25,50,15,15,25,15,15,25]
+        serverNbTab1Tree2.insert("", END, values=("1","Missing","Not available"\
+        ,"","","","","","",),tags = ('critical',))
         pass
 
-    serverNbTab1Tree2.tag_configure('need', background='#f86d7e')
+    serverNbTab1Tree2.tag_configure('need', background='#f5e45e')
+    serverNbTab1Tree2.tag_configure('critical', background='#f86d7e')
 
 #Tab Disks---------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -702,13 +767,13 @@ def get_detail_command(mode):
     try:
         for row in diskinfo(mode, selected_row['Ip'], wmiuser, wmipass):
             if (row['No']=='1'):
-                global_treeview_dic['serverNbTab2Tree1']=[str(int(row['No'])+4),row['SystemName']\
-                ,row['Name'],row['DriveLetter'],row['FileSystem'],\
-                row['Label'],row['Capacity'],row['FreeSpace'],\
-                row['BlockSize'],"10"]
+                global_treeview_dic['serverNbTab2Tree1']=[str(int(row['No'])+4)\
+                ,row['SystemName'],row['Name'],row['DriveLetter'],\
+                row['FileSystem'],row['Label'],row['Capacity'],\
+                row['FreeSpace'],row['BlockSize'],"10"]
                 continue
             if (row['DriveType'] == 3):
-                if (row['BlockSize'] != 65536 and row['DriveLetter'] != "C:"):
+                if (row['BlockSize'] != 64 and row['DriveLetter'] != "C:"):
                     serverNbTab2Tree1.insert("", END, values=(row['No'],\
                     row['SystemName'],row['Name'],row['DriveLetter'],\
                     row['FileSystem'],row['Label'],row['Capacity'],\
@@ -722,15 +787,16 @@ def get_detail_command(mode):
         serverNbTab2Tree1.tag_configure('need', background='#f5e45e')
 
     except:
-        serverNbTab2Tree1.insert("", END, values=('1','',\
-                                                  'Missing',\
-                                                  '',\
-                                                  '',\
-                                                  '',\
-                                                  '',\
-                                                  '',\
-                                                  '',\
-                                                  ''),\
+        global_treeview_dic['serverNbTab2Tree1']=[5,15,25,15,15,15,25,15,15,25]
+        serverNbTab2Tree1.insert("", END, values=("1","Missing",\
+                                                  "Not available",\
+                                                  "",\
+                                                  "",\
+                                                  "",\
+                                                  "",\
+                                                  "",\
+                                                  "",\
+                                                  ""),\
         tags = ('need',))
         serverNbTab2Tree1.tag_configure('need', background='#f86d7e')
         pass
@@ -766,18 +832,92 @@ def get_detail_command(mode):
                                                           row['MaximumSize']),\
             tags = ('good',))
     except:
-        serverNbTab3Tree1.insert("", END, values=('1',
-                                                  '',
-                                                  '',
-                                                  'Missing',
-                                                  '',
-                                                  '',
-                                                  '',
-                                                  '',
-                                                  ''),
+        global_treeview_dic['serverNbTab3Tree1']=[5,15,25,25,15,15,25,15,15]
+        serverNbTab3Tree1.insert("", END, values=("1",
+                                                  "Missing",
+                                                  "Not available",
+                                                  "",
+                                                  "",
+                                                  "",
+                                                  "",
+                                                  "",
+                                                  ""),
         tags = ('need',))
         pass
     serverNbTab3Tree1.tag_configure('need', background='#f86d7e')
+
+#Tab Status
+#Last startup
+    sqlexec1 = readFileFromOS(getFileUrl("StatusTree1_0.sql","scripts"))
+    for i in StatusTree1.get_children():
+        StatusTree1.delete(i)
+
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        StatusTree1.insert("", END, values=(row[0],row[1]))
+
+#CPUs
+    sqlexec1 = readFileFromOS(getFileUrl("StatusTree2_0.sql","scripts"))
+
+    sqlexec3 = readFileFromOS(getFileUrl("StatusTree2_1.sql","scripts"))
+
+    for i in StatusTree2.get_children():
+        StatusTree2.delete(i)
+
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec3):
+        StatusTree2.insert("", END, values=(row[0],row[1],row[2]))
+
+#Version
+    sqlexec1 = readFileFromOS(getFileUrl("StatusTree3_0.sql","scripts"))
+    for i in StatusTree3.get_children():
+        StatusTree3.delete(i)
+
+    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1):
+        StatusTree3.insert("", END, values=(row[0],row[1],row[2],row[3],row[4],\
+        row[5]))
+
+#Is Supported?
+
+    for i in StatusTree3.get_children():
+        if (float(StatusTree3.item(i)["values"][0][0:2])<11):
+            VersionTree1.insert("", END, values=("So\\ Sorry!!!\\ Version\\ \
+            is\\ not\\ supported.\\ Some\\ functionalities\\ may\\ don't\\ work\
+            "), tags = ('need',))
+        else:
+            VersionTree1.insert("", END, values=("Version\\ is\\ supported."), \
+            tags = ('good',))
+
+    VersionTree1.tag_configure('need', background='#f86d7e')
+
+#Missing updates
+
+    sqlexec1=readFileFromOS(getFileUrl("StatusTree4_0.sql","scripts"))
+
+    for i in StatusTree4.get_children():
+        StatusTree4.delete(i)
+
+    try:
+        for row in mssqldetail(selected_row['Ip'],selected_row['Port'],\
+        "master",selected_row['User'],selected_row['Pwd'],sqlexec1):
+            version = BeatifulSoup_Parser(row[0])
+            #version = mssqlversioncomplete("12.0.6259")
+            # print (version)
+        list=[]
+        i=1
+        list=[str(i+4),'10','10','10','10','10']
+        global_treeview_dic['StatusTree4']=list
+        for items in version:
+            items.append(str(i))
+            StatusTree4.insert("",END,values=(items),tags = ('need'))
+            i=i+1
+    except:
+        StatusTree4.insert("", END, values=("Error!!",'','','','',"1"),\
+        tags = ('need',))
+        pass
+
+    StatusTree4.tag_configure('need', background='#f86d7e')
 
 #Tab Default Paths-------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -797,12 +937,18 @@ def get_detail_command(mode):
 
     for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master"\
     ,selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
-        if (row[2]==1):
-            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
-                                     tags = ('need',))
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab4Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[4]]
+            continue
+
+        if (row[3]==1):
+            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[4]), tags = ('need',))
         else:
-            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[3]),\
-                                     tags = ('good',))
+            serverNbTab4Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[4]), tags = ('good',))
 
     mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec)
@@ -825,7 +971,7 @@ def get_detail_command(mode):
         rows=1
 
     if rows==0:
-        serverNbTab5Tree1.insert("", END, values=("Missing","","","",),tags = \
+        serverNbTab5Tree1.insert("", END, values=("1","Missing","","",),tags = \
         ('need'))
         AlertsButton.config(state=NORMAL)
 
@@ -841,11 +987,16 @@ def get_detail_command(mode):
     rows=0
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab5Tree3.insert("", END, values=(row[1],row[2],row[3]),tags = \
-        ('good'))
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab5Tree3']=[str(row[0]+4),\
+            row[2],row[3],row[4]]
+            continue
+
+        serverNbTab5Tree3.insert("", END, values=(row[0],row[2],row[3],row[4]),\
+        tags = ('good'))
         rows=rows+1
     if rows==0 or rows<13 :
-        serverNbTab5Tree3.insert("", END, values=("Missing","","",),tags = \
+        serverNbTab5Tree3.insert("", END, values=("","Missing","","",),tags = \
         ('need'))
         AlertsButton.config(state=NORMAL)
 
@@ -877,156 +1028,164 @@ def get_detail_command(mode):
 #------------------------------------------------------------------------------
 
 #SQL Server Agent enabled
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree1_0.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree1_0.sql","scripts"))
+    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree1_1.sql","scripts"))
 
     for i in serverNbTab6Tree1.get_children():
         serverNbTab6Tree1.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[1]=='Disabled'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master"\
+    ,selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab6Tree1']=[str(row[0]+4),\
+            row[1],row[2]]
+            continue
+        if ('Mail' in row[1]) and (row[2]=='Disabled' or row[2]=='Missing'):
+            mailButton.config(state=NORMAL)
+        if (row[2]=='Disabled' or row[2]=='Missing' or row[2]==\
+        'Express Edition'):
+            serverNbTab6Tree1.insert("", END, values=(row[0],row[1],row[2]), \
             tags = ('need'))
         else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+            serverNbTab6Tree1.insert("", END, values=(row[0],row[1],row[2]), \
             tags = ('good'))
 
-    #serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
+    serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree1.tag_configure('good', background='#aef38c')
 
 #SQL Server Agent status
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree2_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree2_0.sql","scripts"))
 
     #for i in serverNbTab6Tree2.get_children():
     #    serverNbTab6Tree2.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[1]=='Running.'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('good'))
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('need'))
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    if (row[1]=='Running.'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('good'))
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('need'))
 
     #serverNbTab6Tree2.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree2.tag_configure('good', background='#aef38c')
 
 #SQL Database Mail is enabled
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree3_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree3_0.sql","scripts"))
 
     #for i in serverNbTab6Tree3.get_children():
     #    serverNbTab6Tree3.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[1]=='Disabled'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('need'))
-            mailButton.config(state=NORMAL)
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
-            tags = ('good'))
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    if (row[1]=='Disabled'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('need'))
+    #        mailButton.config(state=NORMAL)
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), \
+    #        tags = ('good'))
 
     #serverNbTab6Tree3.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree3.tag_configure('good', background='#aef38c')
 
 #@Mail Profile
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree4_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree4_0.sql","scripts"))
 
     #for i in serverNbTab6Tree4.get_children():
     #    serverNbTab6Tree4.delete(i)
 
-    rows=0
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags=('good'))
-        rows=1
+    #rows=0
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags=('good'))
+    #    rows=1
 
-    if rows==0:
-        serverNbTab6Tree1.insert("", END, values=("Mail Profile",\
-        "Missing"), tags = ('need'))
-        mailButton.config(state=NORMAL)
+    #if rows==0:
+    #    serverNbTab6Tree1.insert("", END, values=("Mail Profile",\
+    #    "Missing"), tags = ('need'))
+    #    mailButton.config(state=NORMAL)
 
     #serverNbTab6Tree4.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree4.tag_configure('good', background='#aef38c')
 
 #Mail Account
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree5_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree5_0.sql","scripts"))
 
     #for i in serverNbTab6Tree5.get_children():
     #    serverNbTab6Tree5.delete(i)
 
-    rows=0
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
-        rows=1
+    #rows=0
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
+    #    rows=1
 
-    if rows==0:
-        serverNbTab6Tree1.insert("", END, values=("Mail Account","Missing"), tags = ('need'))
-        mailButton.config(state=NORMAL)
+    #if rows==0:
+    #    serverNbTab6Tree1.insert("", END, values=("Mail Account","Missing"), tags = ('need'))
+    #    mailButton.config(state=NORMAL)
 
     #serverNbTab6Tree5.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree5.tag_configure('good', background='#aef38c')
 
 #SQL Server Agent is enabled to use Database Mail
-    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree6_0.sql","scripts"))
+    #sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree6_0.sql","scripts"))
 
-    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree6_1.sql","scripts"))
+    #sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree6_1.sql","scripts"))
 
     #for i in serverNbTab6Tree6.get_children():
     #    serverNbTab6Tree6.delete(i)
 
-    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec1,\
-                           sqlexec2):
-        if (row[1]=='Enabled'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
-            mailButton.config(state=NORMAL)
+    #for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec1,\
+    #                       sqlexec2):
+    #    if (row[1]=='Enabled'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
+    #        mailButton.config(state=NORMAL)
 
     #serverNbTab6Tree6.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree6.tag_configure('good', background='#aef38c')
 
 #SQL Server Agent is enabled to use Database Mail and Mail Profile is assigned
-    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree7_0.sql","scripts"))
+    #sqlexec1 = readFileFromOS(getFileUrl("serverNbTab6Tree7_0.sql","scripts"))
 
-    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree7_1.sql","scripts"))
+    #sqlexec2 = readFileFromOS(getFileUrl("serverNbTab6Tree7_1.sql","scripts"))
 
     #for i in serverNbTab6Tree7.get_children():
     #    serverNbTab6Tree7.delete(i)
 
-    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
-    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
+    #for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    #"master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
         #print (row[0])
-        if (row[1]=='Missing' or row[1]=='Express Edition'):
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
-            mailButton.config(state=NORMAL)
-        else:
-            serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
+    #    if (row[1]=='Missing' or row[1]=='Express Edition'):
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('need'))
+    #        mailButton.config(state=NORMAL)
+    #    else:
+    #        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]), tags = ('good'))
 
     #serverNbTab6Tree7.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree7.tag_configure('good', background='#aef38c')
 
 #get email retry interval configuration value
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree8_0.sql","scripts"))
+    #sqlexec = readFileFromOS(getFileUrl("serverNbTab6Tree8_0.sql","scripts"))
 
     #for i in serverNbTab6Tree8.get_children():
     #    serverNbTab6Tree8.delete(i)
 
-    rows=0
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab6Tree1.insert("", END, values=(row[0],row[1]),tags = ('good'))
-        rows=1
+    #rows=0
+    #for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
+    #                       selected_row['User'],selected_row['Pwd'],sqlexec):
+    #    serverNbTab6Tree1.insert("", END, values=(row[0],row[1]),tags = ('good'))
+    #    rows=1
 
-    if rows==0:
-        serverNbTab6Tree1.insert("", END, values=("","Missing",),tags = \
-        ('need'))
+    #if rows==0:
+    #    serverNbTab6Tree1.insert("", END, values=("","Missing",),tags = \
+    #    ('need'))
 
-    serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
+    #serverNbTab6Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab6Tree8.tag_configure('good', background='#aef38c')
 
 #General Check
@@ -1038,8 +1197,14 @@ def get_detail_command(mode):
 
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        serverNbTab7Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],)\
-        ,tags = ('need'))
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab7Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[3],row[4]]
+            continue
+
+        serverNbTab7Tree1.insert("", END, values=(row[0],row[1],row[2],row[3],\
+        row[4]),tags = ('need'))
+
     serverNbTab7Tree1.tag_configure('need', background='#f86d7e')
 
 #--REMOTE ADMIN
@@ -1054,13 +1219,19 @@ def get_detail_command(mode):
 
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[2]=='OFF'):
-            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),\
-            tags = ('need'))
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab7Tree2']=[row[0],row[1],\
+            row[2],row[3]]
+            continue
+
+        if (row[3]=='OFF'):
+            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],),tags = ('need'))
             genchkButton.config(state=NORMAL)
         else:
-            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],),\
-            tags = ('good'))
+            serverNbTab7Tree2.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],),tags = ('good'))
     serverNbTab7Tree2.tag_configure('need', background='#f5e45e')
 
 #--IFI STATUS
@@ -1087,20 +1258,30 @@ def get_detail_command(mode):
 
 #Databases
 #--DATABASES
-    sqlexec = readFileFromOS(getFileUrl("serverNbTab8Tree1_0.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab8Tree1_0.sql","scripts"))
+    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab8Tree1_1.sql","scripts"))
 
     for i in serverNbTab8Tree1.get_children():
         serverNbTab8Tree1.delete(i)
 
-    for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",\
-                           selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[3]!='sa' or row[2]=='Take Care'):
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    "master",selected_row['User'],selected_row['Pwd'],sqlexec1,sqlexec2):
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab8Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],\
+            row[10],row[11]]
+            continue
+
+        if (row[5]!='sa' or row[4]=='Alert'):
             serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('need'))
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],)\
+            ,tags = ('need'))
             saButton.config(state=NORMAL)
         else:
             serverNbTab8Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],row[5],row[6],row[7],row[8],row[9],),tags = ('good'))
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],)\
+            ,tags = ('good'))
 
     serverNbTab8Tree1.tag_configure('need', background='#f86d7e')
 
@@ -1116,12 +1297,17 @@ def get_detail_command(mode):
     for rows in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec1,
                            sqlexec2):
-        if (rows[2]>90):
-            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],\
-            rows[3], ),tags = ('need'))
+        if (rows[0]==1):
+            global_treeview_dic['serverNbTab12Tree1']=[rows[0],rows[1],\
+            rows[2],rows[3],rows[4]]
+            continue
+
+        if (rows[3]>90):
+            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],rows[3],\
+            rows[4], ),tags = ('need'))
         else:
-            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],\
-            rows[3], ),tags = ('good'))
+            serverNbTab12Tree1.insert("", END, values=(rows[0],rows[1],rows[2],rows[3],\
+            rows[4], ),tags = ('good'))
 
     serverNbTab12Tree1.tag_configure('need', background='#f86d7e')
     #serverNbTab12Tree1.tag_configure('good', background='#aef38c')
@@ -1164,12 +1350,17 @@ def get_detail_command(mode):
 
     for row in mssqldetail(selected_row['Ip'],selected_row['Port'],"master",
                            selected_row['User'],selected_row['Pwd'],sqlexec):
-        if (row[0]=='BUILTIN\\Users' or row[0]=='NT AUTHORITY\\SYSTEM'):
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab10Tree1']=[str(row[0]+4),\
+            row[1],row[2],row[3],row[4],row[5]]
+            continue
+
+        if (row[1]=='BUILTIN\\Users' or row[1]=='NT AUTHORITY\\SYSTEM'):
             serverNbTab10Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],),tags = ('need'))
+            row[3],row[4],row[5],),tags = ('need'))
         else:
             serverNbTab10Tree1.insert("", END, values=(row[0],row[1],row[2],\
-            row[3],row[4],),tags = ('good'))
+            row[3],row[4],row[5],),tags = ('good'))
 
     serverNbTab10Tree1.tag_configure('need', background='#f86d7e')
 
@@ -1192,7 +1383,7 @@ def get_detail_command(mode):
         rows=1
 
     if rows==0:
-        serverNbTab9Tree1.insert("", END, values=("","Missing","","","","","",\
+        serverNbTab9Tree1.insert("", END, values=("1","Missing","","","","","",\
         "","",),tags = ('need'))
         DBAdminButton.config(state=NORMAL)
 
@@ -1213,7 +1404,7 @@ def get_detail_command(mode):
         rows=1
 
     if rows==0:
-        serverNbTab9Tree2.insert("", END, values=("Missing","","","",),\
+        serverNbTab9Tree2.insert("", END, values=("1","Missing","","",),\
         tags = ('need'))
         ServiceButton.config(state=NORMAL)
 
@@ -1239,7 +1430,7 @@ def get_detail_command(mode):
         rows=1
 
     if rows==0:
-        serverNbTab9Tree3.insert("", END, values=("Missing","",),\
+        serverNbTab9Tree3.insert("", END, values=("1","Missing",),\
         tags = ('need'))
         spButton.config(state=NORMAL)
 
@@ -1266,7 +1457,7 @@ def get_detail_command(mode):
         rows=1
 
     if rows==0:
-        serverNbTab9Tree4.insert("", END, values=("Missing","",),\
+        serverNbTab9Tree4.insert("", END, values=("1","Missing",),\
         tags = ('need'))
         StandardLoginsButton.config(state=NORMAL)
 
@@ -1294,11 +1485,58 @@ def get_detail_command(mode):
         rows=1
 
     if rows==0:
-        serverNbTab11Tree1.insert("", END, values=("Missing","",),\
+        serverNbTab11Tree1.insert("", END, values=("1","Missing",),\
         tags = ('need'))
 
     serverNbTab11Tree1.tag_configure('need', background='#f86d7e')
 
+#Agent Jobs
+#--Jobs
+    sqlexec = readFileFromOS(getFileUrl("serverNbTab13Tree1_0.sql","scripts"))
+    sqlexec0 = readFileFromOS(getFileUrl("serverNbTab13Tree1_1.sql","scripts"))
+    sqlexec1 = readFileFromOS(getFileUrl("serverNbTab13Tree1_2.sql","scripts"))
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec0)
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec1)
+
+    sqlexec2 = readFileFromOS(getFileUrl("serverNbTab13Tree1_3.sql","scripts"))
+
+    sqlexec3 = readFileFromOS(getFileUrl("serverNbTab13Tree1_4.sql","scripts"))
+
+    for i in serverNbTab13Tree1.get_children():
+        serverNbTab13Tree1.delete(i)
+
+    for row in mssqldetail2sql(selected_row['Ip'],selected_row['Port'],\
+    "master",selected_row['User'],selected_row['Pwd'],sqlexec2,sqlexec3):
+
+        if (row[0]==1):
+            global_treeview_dic['serverNbTab13Tree1']=[row[0],row[1],row[2],\
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
+            row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
+            row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
+            row[28],row[29],row[30],row[31],row[32]]
+            continue
+
+        if (row[8]!='sa' or row[22]=='Fail' or row[29]=='N' or row[30]=='N'):
+            serverNbTab13Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
+            row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
+            row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
+            row[28],row[29],row[30],row[31],row[32]),tag='need')
+        else:
+            serverNbTab13Tree1.insert("", END, values=(row[0],row[1],row[2],\
+            row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],\
+            row[12],row[13],row[14],row[15],row[16],row[17],row[18],row[19],\
+            row[20],row[21],row[22],row[23],row[24],row[25],row[26],row[27],\
+            row[28],row[29],row[30],row[31],row[32]),tag='good')
+    mssqlexec(selected_row['Ip'],selected_row['Port'],"master",\
+                           selected_row['User'],selected_row['Pwd'],sqlexec)
+
+    serverNbTab13Tree1.tag_configure('need', background='#f86d7e')
+    #serverNbTab12Tree2.tag_configure('good', background='#aef38c')
 
 
 ####### main ------------------------------------------------------------------
@@ -1312,29 +1550,40 @@ menubar = Menu(window)
 
 # create a pulldown menu, and add it to the menu bar
 filemenu = Menu(menubar, tearoff=0)
-filemenu.add_command(label="1 Server List", command=view_command)
-filemenu.add_command(label="2 Default path", command=hello)
-filemenu.add_command(label="3 DBAdmin", command=hello)
-filemenu.add_command(label="4 DBMail", command=hello)
-filemenu.add_command(label="5 Alerts", command=hello)
-filemenu.add_command(label="6 sp_whoisactive", command=hello)
-filemenu.add_command(label="7 ServerName", command=hello)
-filemenu.add_command(label="8 Invetory", command=set_inventory)
+filemenu.add_command(label="1 Services", command=lambda: select_notebooktab(0))
+filemenu.add_command(label="2 Disk and Page File", command=lambda: select_notebooktab(1))
+filemenu.add_command(label="3 Default Paths", command=lambda: select_notebooktab(2))
+filemenu.add_command(label="4 DBMail and Alerts", command=lambda: select_notebooktab(3))
+filemenu.add_command(label="5 Databases", command=lambda: select_notebooktab(4))
+filemenu.add_command(label="6 Transaction Log", command=lambda: select_notebooktab(5))
+filemenu.add_command(label="7 Sysadmins", command=lambda: select_notebooktab(6))
+filemenu.add_command(label="8 General Check", command=lambda: select_notebooktab(7))
+filemenu.add_command(label="9 DBA Tools", command=lambda: select_notebooktab(8))
+filemenu.add_command(label="10 Other Options", command=lambda: select_notebooktab(9))
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=window.destroy)
 menubar.add_cascade(label="Setup", menu=filemenu)
 
 # create more pulldown menus
-editmenu = Menu(menubar, tearoff=0)
-editmenu.add_command(label="Basic", command= basic_analyze_command)
-editmenu.add_command(label="Advance", command=hello)
-editmenu.add_command(label="Paste", command=hello)
-menubar.add_cascade(label="Analyze", menu=editmenu)
+Reportmenu = Menu(menubar, tearoff=0)
+Reportmenu.add_command(label="Standard Setup", command= lambda: \
+Reports(global_treeview_dic))
+Reportmenu.add_command(label="Advance", command=hello)
+Reportmenu.add_command(label="Paste", command=hello)
+menubar.add_cascade(label="Reports", menu=Reportmenu)
+
+Inventorymenu = Menu(menubar, tearoff=0)
+Inventorymenu.add_command(label="Add Server", command=lambda: Inventory_AddServer(window))
+Inventorymenu.add_command(label="Remove Server", command=lambda: Inventory_AddServer(window))
+Inventorymenu.add_command(label="Other", command=hello)
+menubar.add_cascade(label="Inventory", menu=Inventorymenu)
 
 helpmenu = Menu(menubar, tearoff=0)
 helpmenu.add_command(label="WIN - SQL Server - Standard Setup", command=hello)
-helpmenu.add_command(label="About", command= lambda: About(global_treeview_dic))
+helpmenu.add_command(label="About", command= About)
 menubar.add_cascade(label="Help", menu=helpmenu)
+
+
 
 # display the menu
 window.config(menu=menubar)
@@ -1417,8 +1666,15 @@ SQLPassEntry=ttk.Entry(inventoryframe,textvariable=SQLPass,show='*',width=20)
 SQLPassEntry.grid(row=3,column=2,padx=5, pady=5,sticky="w")
 
 #Bottoms
+#CheckButton Controls
+OsMode = IntVar()
+OsMode.set(0)
+
+OSOnly = ttk.Checkbutton(inventoryframe, text="OS Only", variable=OsMode)
+OSOnly.grid(row=10, column=1, sticky="e", padx=5, pady=5,)
+
 DetailButton = ttk.Button(inventoryframe, text='Connect', underline = 0, \
-command= lambda: get_detail_command(ConnMode.get()))
+command= lambda: get_detail_command(ConnMode.get(),OsMode.get()))
 DetailButton.grid(row=10, column=2, sticky="e", padx=5, pady=5,)
 
 InventoryButton = ttk.Button(inventory2frame, state=DISABLED, text='Load', \
@@ -1434,7 +1690,7 @@ InventoryButton.grid(row=0, column=1, sticky="e", padx=5, pady=5,)
 #ExitButton.grid(row=3, column=2, sticky="s", padx=5, pady=5)
 
 #TreeViews
-InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=3)
+InventoryTree=ttk.Treeview(inventoryframe,show='headings',height=5)
 InventoryTree.grid(row=4,column=0,padx=5, pady=5,rowspan=6,columnspan=3)
 InventoryTree['columns'] = ('Server', 'Instance', 'Ip', 'Port', 'User', 'Pwd',\
 'Os')
@@ -1519,26 +1775,31 @@ StatusTree3.heading("AlwaysOnEnabled", text="ALWAYS ON",)
 StatusTree3.column("Warning", minwidth=0,width=100)
 StatusTree3.heading("Warning", text="WARNING",)
 
-StatusTree4=ttk.Treeview(statusframe,show='headings',height=3)
+StatusTree3.bind('<Double-Button-1>',lambda event, t=StatusTree3: copyTextToClipboard(t))
+
+StatusTree4=ttk.Treeview(statusframe,show='headings',height=5)
 StatusTree4.grid(row=6,column=0,padx=5, pady=5,rowspan=2,columnspan=5,\
 sticky="w")
-StatusTree4['columns'] = ('No','Version', 'Eos', 'Name', 'Sp', 'Cu', 'KBList',)
-StatusTree4['displaycolumns'] = ('Version', 'Eos', 'Name', 'Sp', 'Cu', \
-'KBList', )
-StatusTree4.column("No", minwidth=0,width=5)
-StatusTree4.heading("No", text="No",)
-StatusTree4.column("Version", minwidth=0,width=75)
-StatusTree4.heading("Version", text="VERSION",)
-StatusTree4.column("Eos", minwidth=0,width=70)
-StatusTree4.heading("Eos", text="EOS",)
-StatusTree4.column("Name", minwidth=0,width=70)
-StatusTree4.heading("Name", text="NAME",)
-StatusTree4.column("Sp", minwidth=0,width=50)
-StatusTree4.heading("Sp", text="SP",)
-StatusTree4.column("Cu", minwidth=0,width=45)
-StatusTree4.heading("Cu", text="CU",)
-StatusTree4.column("KBList", minwidth=0,width=60)
-StatusTree4.heading("KBList", text="KBLIST",)
+
+StatusTree4['columns'] = ('Build', 'AlternativeBuilds', 'FileVersion', \
+'Q', 'KB', 'KB/Description','Url','ReleaseDate','No',)
+StatusTree4['displaycolumns'] = ('No','Build', 'KB/Description',\
+'ReleaseDate', )
+StatusTree4.column("No", minwidth=0,width=20)
+StatusTree4.heading("No", text="#",)
+StatusTree4.column("Build", minwidth=0,width=70)
+StatusTree4.heading("Build", text="BUILD",)
+# StatusTree4.column("FileVersion", minwidth=0,width=100)
+# StatusTree4.heading("FileVersion", text="FILE VERSION",)
+StatusTree4.column("KB/Description", minwidth=0,width=320)
+StatusTree4.heading("KB/Description", text="KB DESCRIPTION",)
+# StatusTree4.column("Url", minwidth=0,width=125)
+# StatusTree4.heading("Url", text="REFERENCE",)
+StatusTree4.column("ReleaseDate", minwidth=0,width=100)
+StatusTree4.heading("ReleaseDate", text="RELEASE DATE",)
+
+StatusTree4.bind('<Double-Button-1>',lambda event, t=StatusTree4: copyTextToClipboard(t))
+# StatusTree4_ttp = (StatusTree4, "A green button")
 
 detailframe = ttk.LabelFrame(window, width=600, height=600, text="Detail")
 detailframe.grid(row=2,column=0,padx=5, pady=5, columnspan=2, sticky="w")
@@ -1558,6 +1819,7 @@ serverNbTab9=Frame(serverNb)
 serverNbTab10=Frame(serverNb)
 serverNbTab11=Frame(serverNb)
 serverNbTab12=Frame(serverNb)
+serverNbTab13=Frame(serverNb)
 
 ##Special Settings Tab
 #Instance
@@ -1580,6 +1842,8 @@ serverNbTab1Tree1.heading("NetBiosName", text="NETBIOSNAME")
 serverNbTab1Tree1.column("NetBiosName", minwidth=0,width=100)
 serverNbTab1Tree1.heading("InstanceName", text="INSTANCENAME")
 serverNbTab1Tree1.column("InstanceName", minwidth=0,width=150)
+
+serverNbTab1Tree1.bind('<Double-Button-1>',lambda event, t=serverNbTab1Tree1: copyTextToClipboard(t))
 
 #Services
 serverNbTab1Tree2=ttk.Treeview(serverNbTab1,show='headings',height=9,)
@@ -1606,6 +1870,8 @@ serverNbTab1Tree2.heading("State", text="STATE")
 serverNbTab1Tree2.column("State", minwidth=0,width=60)
 #serverNbTab1Tree2.heading("PathName", text="PATH")
 #serverNbTab1Tree2.column("PathName", minwidth=0,width=180)
+
+serverNbTab1Tree2.bind('<Double-Button-1>',lambda event, t=serverNbTab1Tree2: copyTextToClipboard(t))
 
 #Disks Tab
 serverNbTab2Tree1=ttk.Treeview(serverNbTab2,show='headings',height=7,)
@@ -1672,8 +1938,10 @@ serverNbTab3Tree1.configure(yscrollcommand=scrollbar_vertical.set)
 #Defaulth Paths Tab
 serverNbTab4Tree1=ttk.Treeview(serverNbTab4,show='headings',height=12,)
 serverNbTab4Tree1.grid(row=0,column=0,padx=5, pady=5)
-serverNbTab4Tree1['columns'] = ('Type', 'Location','Restart')
+serverNbTab4Tree1['columns'] = ('No','Type', 'Location','Restart')
 serverNbTab4Tree1['displaycolumns'] = ('Type', 'Location','Restart')
+serverNbTab4Tree1.heading("No", text="No")
+serverNbTab4Tree1.column("No", minwidth=0,width=100)
 serverNbTab4Tree1.heading("Type", text="TYPE")
 serverNbTab4Tree1.column("Type", minwidth=0,width=100)
 serverNbTab4Tree1.heading("Location", text="LOCATION")
@@ -1684,8 +1952,10 @@ serverNbTab4Tree1.column("Restart", minwidth=0,width=75)
 #DBMail and Alerts Tab
 serverNbTab6Tree1=ttk.Treeview(serverNbTab5,show='headings',height=12, )
 serverNbTab6Tree1.grid(row=0,column=0,padx=5, pady=5, sticky='n', rowspan=3)
-serverNbTab6Tree1['columns'] = ('Component','Status')
+serverNbTab6Tree1['columns'] = ('No','Component','Status')
 serverNbTab6Tree1['displaycolumns'] = ('Component','Status')
+serverNbTab6Tree1.heading("No", text="No")
+serverNbTab6Tree1.column("No", minwidth=0,width=5,anchor="w")
 serverNbTab6Tree1.heading("Component", text="Component")
 serverNbTab6Tree1.column("Component", minwidth=0,width=145,anchor="w")
 serverNbTab6Tree1.heading("Status", text="Status")
@@ -1717,8 +1987,10 @@ serverNbTab5Tree2.column("FailSafeOperator", minwidth=0,width=90,anchor='center'
 #Alerts
 serverNbTab5Tree3=ttk.Treeview(serverNbTab5,show='headings',height=9, )
 serverNbTab5Tree3.grid(row=1,column=1,padx=5, pady=5,sticky="w",rowspan=2)
-serverNbTab5Tree3['columns'] = ('Name', 'Severity','Enabled',)
+serverNbTab5Tree3['columns'] = ('No','Name', 'Severity','Enabled',)
 serverNbTab5Tree3['displaycolumns'] = ('Name', 'Severity','Enabled',)
+serverNbTab5Tree3.heading("No", text="No")
+serverNbTab5Tree3.column("No", minwidth=0,width=5)
 serverNbTab5Tree3.heading("Name", text="ALERT")
 serverNbTab5Tree3.column("Name", minwidth=0,width=155)
 serverNbTab5Tree3.heading("Severity", text="SEVERITY")
@@ -1810,12 +2082,12 @@ mailButton.config(state=DISABLED)
 #--BACKUP COMPRESSION
 #--AD HOC
 #--MAXDOP
-GenCheckLabel=ttk.Label(serverNbTab7,text="RemAdmin/BkpCompress/Adhoc/MaxDop")
+GenCheckLabel=ttk.Label(serverNbTab7,text="RemAdmin / BkpCompress / Adhoc / MaxDop")
 GenCheckLabel.grid(row=0,column=0,padx=5, pady=5, sticky='w',)
 
 serverNbTab7Tree2=ttk.Treeview(serverNbTab7,show='headings',height=4, )
 serverNbTab7Tree2.grid(row=1,column=0,padx=5, pady=5, sticky='w', rowspan=2)
-serverNbTab7Tree2['columns'] = ('Name','Desc','Status',)
+serverNbTab7Tree2['columns'] = ('No','Name','Desc','Status',)
 serverNbTab7Tree2['displaycolumns'] = ('Name','Desc','Status',)
 serverNbTab7Tree2.heading("Name", text="NAME")
 serverNbTab7Tree2.column("Name", minwidth=0,width=245)
@@ -1852,8 +2124,10 @@ GenCheckLabel.grid(row=3,column=0,padx=5, pady=5, sticky='w')
 
 serverNbTab7Tree1=ttk.Treeview(serverNbTab7,show='headings',height=4, )
 serverNbTab7Tree1.grid(row=4,column=0,padx=5, pady=5, columnspan=2, sticky='w')
-serverNbTab7Tree1['columns'] = ('Name','Desc','Value','ValueInUse',)
+serverNbTab7Tree1['columns'] = ('No','Name','Desc','Value','ValueInUse',)
 serverNbTab7Tree1['displaycolumns'] = ('Name','Desc','Value','ValueInUse',)
+serverNbTab7Tree1.heading("No", text="No")
+serverNbTab7Tree1.column("No", minwidth=0,width=5)
 serverNbTab7Tree1.heading("Name", text="NAME")
 serverNbTab7Tree1.column("Name", minwidth=0,width=245)
 serverNbTab7Tree1.heading("Desc", text="DESC")
@@ -1871,16 +2145,20 @@ serverNbTab7Tree1.configure(yscrollcommand=scrollbar_vertical.set)
 #--Databases
 serverNbTab8Tree1=ttk.Treeview(serverNbTab8,show='headings',height=12, )
 serverNbTab8Tree1.grid(row=0,column=0,padx=5, pady=5, )
-serverNbTab8Tree1['columns'] = ('Id','Name','LastBackup','Owner','Creation',\
-'Compat','Status','Recovery','Verification','LRWait',)
-serverNbTab8Tree1['displaycolumns'] = ('Id','Name','LastBackup','Owner',\
+serverNbTab8Tree1['columns'] = ('No','Id','Name','Size','LastBackup','Owner',\
 'Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab8Tree1['displaycolumns'] = ('Id','Name','Size','LastBackup','Owner',\
+'Creation','Compat','Status','Recovery','Verification','LRWait',)
+serverNbTab8Tree1.heading("No", text="No")
+serverNbTab8Tree1.column("No", minwidth=0,width=5,anchor="w")
 serverNbTab8Tree1.heading("Id", text="ID")
 serverNbTab8Tree1.column("Id", minwidth=0,width=25,anchor="w")
 serverNbTab8Tree1.heading("Name", text="NAME")
 serverNbTab8Tree1.column("Name", minwidth=0,width=160,anchor="w")
+serverNbTab8Tree1.heading("Size", text="SIZE")
+serverNbTab8Tree1.column("Size", minwidth=0,width=60,anchor="w")
 serverNbTab8Tree1.heading("LastBackup", text="LAST BKP")
-serverNbTab8Tree1.column("LastBackup", minwidth=0,width=80,anchor="w")
+serverNbTab8Tree1.column("LastBackup", minwidth=0,width=100,anchor="w")
 serverNbTab8Tree1.heading("Owner", text="OWNER")
 serverNbTab8Tree1.column("Owner", minwidth=0,width=50,anchor="w")
 serverNbTab8Tree1.heading("Creation", text="CREATION")
@@ -1894,7 +2172,10 @@ serverNbTab8Tree1.column("Recovery", minwidth=0,width=60,anchor="w")
 serverNbTab8Tree1.heading("Verification", text="VERIFICATION")
 serverNbTab8Tree1.column("Verification", minwidth=0,width=85,anchor="w")
 serverNbTab8Tree1.heading("LRWait", text="LRWAIT")
-serverNbTab8Tree1.column("LRWait", minwidth=0,width=80,anchor="w")
+serverNbTab8Tree1.column("LRWait", minwidth=0,width=75,anchor="w")
+
+serverNbTab8Tree1.bind('<Double-Button-1>',lambda event, t=serverNbTab8Tree1: copyTextToClipboard(t))
+
 scrollbar_vertical = ttk.Scrollbar(serverNbTab8, orient="vertical", \
                                    command=serverNbTab8Tree1.yview)
 scrollbar_vertical.grid(row=0, column=1, sticky="ens")
@@ -1909,7 +2190,7 @@ saButton.config(state=DISABLED)
 #--Transaction Log Usage
 serverNbTab12Tree1=ttk.Treeview(serverNbTab12,show='headings',height=12, )
 serverNbTab12Tree1.grid(row=0,column=0,padx=5, pady=5, )
-serverNbTab12Tree1['columns'] = ('Database','LogSizeMB','LogSpaceUsed',\
+serverNbTab12Tree1['columns'] = ('No','Database','LogSizeMB','LogSpaceUsed',\
 'Status',)
 serverNbTab12Tree1['displaycolumns'] = ('Database','LogSizeMB','LogSpaceUsed',\
 'Status')
@@ -1940,12 +2221,86 @@ scrollbar_vertical = ttk.Scrollbar(serverNbTab12, orient="vertical", \
 scrollbar_vertical.grid(row=0, column=3, sticky="ens")
 serverNbTab12Tree2.configure(yscrollcommand=scrollbar_vertical.set)
 
+
+#--#Agent Job Tab
+#--Job Information
+serverNbTab13Tree1=ttk.Treeview(serverNbTab13,show='headings',height=12, )
+serverNbTab13Tree1.grid(row=0,column=0,padx=5, pady=5, )
+
+serverNbTab13Tree1['columns'] = ('No','Job_id','Originating_server','Name',\
+'Enable','Description','Start_step_id','Category','Owner',\
+'Notify_level_eventlog','Notify_level_email','Notify_level_netsend',\
+'Notify_level_page','Notify_email_operator','Notify_netsend_operator',\
+'Notify_page_operator','Delete_level','Date_created','Date_modified',\
+'Version_number','Last_run_date','Last_run_time','Last_run_outcome',\
+'Next_run_date','Next_run_time','Next_run_schedule_id',\
+'Current_execution_status','Current_execution_step',\
+'Current_retry_attempt','Has_step','Has_schedule','Has_target','Type')
+
+serverNbTab13Tree1['displaycolumns'] = ('Name',\
+'Enable','Description','Owner','Date_created',\
+'Last_run_date','Last_run_time','Last_run_outcome',\
+'Next_run_date','Next_run_time','Has_step','Has_schedule',)
+
+serverNbTab13Tree1.heading("No", text="No")
+serverNbTab13Tree1.column("No", minwidth=0,width=5,anchor="w")
+serverNbTab13Tree1.heading("Job_id", text="JOBID")
+serverNbTab13Tree1.column("Job_id", minwidth=0,width=100,anchor="w")
+serverNbTab13Tree1.heading("Name", text="NAME")
+serverNbTab13Tree1.column("Name", minwidth=0,width=200,anchor="w")
+serverNbTab13Tree1.heading("Enable", text="ON")
+serverNbTab13Tree1.column("Enable", minwidth=0,width=30,anchor="w")
+serverNbTab13Tree1.heading("Description", text="DESC")
+serverNbTab13Tree1.column("Description", minwidth=0,width=180,anchor="w")
+serverNbTab13Tree1.heading("Owner", text="OWN")
+serverNbTab13Tree1.column("Owner", minwidth=0,width=40,anchor="w")
+serverNbTab13Tree1.heading("Date_created", text="CREATED")
+serverNbTab13Tree1.column("Date_created", minwidth=0,width=70,anchor="w")
+serverNbTab13Tree1.heading("Last_run_date", text="LAST")
+serverNbTab13Tree1.column("Last_run_date", minwidth=0,width=60,anchor="w")
+serverNbTab13Tree1.heading("Last_run_time", text="TIME")
+serverNbTab13Tree1.column("Last_run_time", minwidth=0,width=50,anchor="w")
+serverNbTab13Tree1.heading("Last_run_outcome", text="OUTCOME")
+serverNbTab13Tree1.column("Last_run_outcome", minwidth=0,width=70,anchor="w")
+serverNbTab13Tree1.heading("Next_run_date", text="NEXT")
+serverNbTab13Tree1.column("Next_run_date", minwidth=0,width=60,anchor="w")
+serverNbTab13Tree1.heading("Next_run_time", text="TIME")
+serverNbTab13Tree1.column("Next_run_time", minwidth=0,width=50,anchor="w")
+serverNbTab13Tree1.heading("Has_step", text="STEP")
+serverNbTab13Tree1.column("Has_step", minwidth=0,width=40,anchor="w")
+serverNbTab13Tree1.heading("Has_schedule", text="SCH")
+serverNbTab13Tree1.column("Has_schedule", minwidth=0,width=30,anchor="w")
+serverNbTab13Tree1.heading("Type", text="TYPE")
+serverNbTab13Tree1.column("Type", minwidth=0,width=50,anchor="w")
+
+scrollbar_vertical = ttk.Scrollbar(serverNbTab13, orient="vertical", \
+                                   command=serverNbTab13Tree1.yview)
+scrollbar_vertical.grid(row=0, column=1, sticky="ens")
+serverNbTab13Tree1.configure(yscrollcommand=scrollbar_vertical.set)
+
+#--VLF
+serverNbTab12Tree2=ttk.Treeview(serverNbTab12,show='headings',height=12, )
+serverNbTab12Tree2.grid(row=0,column=2,padx=5, pady=5, )
+serverNbTab12Tree2['columns'] = ('Database','Vlfs',)
+serverNbTab12Tree2['displaycolumns'] = ('Database','Vlfs',)
+serverNbTab12Tree2.heading("Database", text="DATABASE")
+serverNbTab12Tree2.column("Database", minwidth=0,width=160,anchor="w")
+serverNbTab12Tree2.heading("Vlfs", text="VLFs")
+serverNbTab12Tree2.column("Vlfs", minwidth=0,width=100,anchor="w")
+scrollbar_vertical = ttk.Scrollbar(serverNbTab12, orient="vertical", \
+                                   command=serverNbTab12Tree2.yview)
+scrollbar_vertical.grid(row=0, column=3, sticky="ens")
+serverNbTab12Tree2.configure(yscrollcommand=scrollbar_vertical.set)
+
+
 #--#Logins Sysadmin Tab
 #--Sysadmin members
 serverNbTab10Tree1=ttk.Treeview(serverNbTab10,show='headings',height=12, )
 serverNbTab10Tree1.grid(row=0,column=0,padx=5, pady=5, sticky='n')
-serverNbTab10Tree1['columns'] = ('Name','Type','Status','Creation','Db',)
+serverNbTab10Tree1['columns'] = ('No','Name','Type','Status','Creation','Db',)
 serverNbTab10Tree1['displaycolumns'] = ('Name','Type','Status','Creation','Db',)
+serverNbTab10Tree1.heading("No", text="No")
+serverNbTab10Tree1.column("No", minwidth=0,width=5, )
 serverNbTab10Tree1.heading("Name", text="NAME")
 serverNbTab10Tree1.column("Name", minwidth=0,width=250, )
 serverNbTab10Tree1.heading("Type", text="TYPE")
@@ -2063,6 +2418,9 @@ serverNbTab9Tree4.heading("Db", text="DB")
 serverNbTab9Tree4.column("Db", minwidth=0,width=145, )
 
 #--Default trace
+labeldftrace=ttk.Label(serverNbTab11,text="Default trace")
+labeldftrace.grid(row=2,column=0,padx=5, pady=5, sticky='w')
+
 serverNbTab11Tree1=ttk.Treeview(serverNbTab11,show='headings',height=5, )
 serverNbTab11Tree1.grid(row=5,column=0,padx=5, pady=5,columnspan=4,sticky='w' )
 serverNbTab11Tree1['columns'] = ('Id','Property','Value',)
@@ -2090,6 +2448,7 @@ serverNb.add(serverNbTab5, text='DBMail & Alerts',)
 serverNb.add(serverNbTab8, text='Databases',)
 serverNb.add(serverNbTab12, text='Transaction Log',)
 serverNb.add(serverNbTab10, text='Sysadmins',)
+serverNb.add(serverNbTab13, text='Agent Jobs',)
 serverNb.add(serverNbTab7, text='General Check',)
 serverNb.add(serverNbTab9, text='DBA Tools',)
 serverNb.add(serverNbTab11, text='Other Options',)

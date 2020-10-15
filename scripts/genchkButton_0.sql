@@ -7,6 +7,12 @@ END;
 IF EXISTS (SELECT * FROM sys.configurations WHERE name LIKE 'backup checksum default')
 BEGIN
 EXEC sp_configure 'backup checksum default', 1;
-END
+END;
+IF EXISTS(select name from sys.configurations where name like '%backup compression default%')
+BEGIN
+EXEC sp_configure 'backup compression default', 1;
+END;
+
 EXEC sp_configure 'show advanced options',0;
+
 RECONFIGURE WITH OVERRIDE;

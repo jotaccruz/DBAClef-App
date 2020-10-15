@@ -1,0 +1,36 @@
+use msdb;
+CREATE TABLE #job_status
+(
+[Job_id] uniqueidentifier,--0
+[Originating_server] nvarchar(250),--1
+[Name] sysname,--2
+[Enable] tinyint,--3
+[Description] nvarchar(1024),--4
+[Start_step_id] int,--5
+[Category] nvarchar(250),--6
+[Owner] nvarchar(250),--7
+[Notify_level_eventlog] int,--8
+[Notify_level_email] int,--9
+[Notify_level_netsend] int,--10
+[Notify_level_page] int,--11
+[Notify_email_operator] nvarchar(250),--12
+[Notify_netsend_operator] nvarchar(250),--13
+[Notify_page_operator] nvarchar(250),--14
+[Delete_level] int,--15
+[Date_created] datetime,--16
+[Date_modified] datetime,--17
+[Version_number] int,--18
+[Last_run_date] int,--19
+[Last_run_time] int,--20
+[Last_run_outcome] int,--21
+[Next_run_date] int,--22
+[Next_run_time] int,--23
+[Next_run_schedule_id] int,--24
+[Current_execution_status] int,--25
+[Current_execution_step] nvarchar(250),--26
+[Current_retry_attempt] int,--27
+[Has_step] int,--28
+[Has_schedule] int,--29
+[Has_target] int,--30
+[Type] int);--31
+EXEC master.dbo.sp_help_job_moldmydb;
